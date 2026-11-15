@@ -48,9 +48,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:#e8c77acc;box-shadow:0 2px 8px #0008}
 #mapw{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 50px);z-index:3;background:#1f1610cc;border:1px solid #c9a24a66;border-radius:10px;padding:4px}
 #mapw .mh{display:flex;align-items:center;gap:4px;justify-content:flex-end}
-#mapw .mh span{flex:1;font-size:11px;color:#e8c77a;padding-left:2px}
-.btn.sm{padding:3px 6px;font-size:11px;min-width:0;border-radius:7px}
-#map{display:block;margin-top:4px;border-radius:6px;touch-action:none}
+#mapw .mh span{flex:1;font-size:10px;color:#e8c77a;padding-left:1px;white-space:nowrap}
+.btn.sm{padding:2px 5px;font-size:11px;min-width:20px;border-radius:7px}
+#mapw .mh{gap:3px}
+#map{display:block;margin:4px auto 0;border-radius:6px;touch-action:none}
 #upd{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 60px);background:#b8862f;color:#1b1410;font-weight:bold;border-radius:20px;padding:9px 18px;font-size:14px;box-shadow:0 4px 16px #000a;display:none;z-index:8;white-space:nowrap}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1b1410;z-index:9;color:#e8c77a;letter-spacing:4px;transition:opacity .6s}
 #load .s{font-size:12px;color:#a8946c;margin-top:10px;letter-spacing:1px}
@@ -68,7 +69,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 </div>
 <div id="hint">單指旋轉・雙指縮放／平移・點物件看解說</div>
 <div id="zone"></div>
-<div id="mapw"><div class="mh"><span id="mapCnt">0/17</span><button class="btn sm" id="bNight">☾ 夜</button><button class="btn sm" id="bMapMin">－</button></div><canvas id="map"></canvas></div>
+<div id="mapw"><div class="mh"><button class="btn sm" id="bMapFollow" title="跟隨">◎</button><button class="btn sm" id="bMapReset" style="visibility:hidden">1×</button><button class="btn sm" id="bNight" title="日夜">☾</button><button class="btn sm" id="bMapMin">－</button></div><canvas id="map"></canvas></div>
 <div id="info"><div class="hd"><h3 id="iTitle"></h3><button class="btn" id="bInfoX">✕</button></div><div class="tx" id="iText"></div><button class="btn" id="bGoStop">前往此站導覽</button></div>
 <div id="joy"><div id="knob"></div></div>
 <div id="card">
@@ -1064,7 +1065,7 @@ function setNight(v){
   starSky.visible=v;moon.visible=v;
   for(var i=0;i<glowMats.length;i++)glowMats[i].emissiveIntensity=v?glowMats[i].userData.night:glowMats[i].userData.base;
   if(window._chandLight)window._chandLight.intensity=v?1.4:0.6;
-  $('bNight').textContent=v?'☀ 日':'☾ 夜';
+  $('bNight').textContent=v?'☀':'☾';
   try{localStorage.setItem('conlns_night',v?'1':'0');}catch(e){}
 }
 $('bNight').addEventListener('click',function(){setNight(!night);});
@@ -1092,24 +1093,29 @@ function markVisited(i){if(i<0||visited[i])return;visited[i]=1;mapDirty=true;try
 var MX0=-92,MX1=236,MZ0=-245,MZ1=272,mapC=$('map'),mapG=mapC.getContext('2d'),MW=104,MH=Math.round(MW*(MZ1-MZ0)/(MX1-MX0)),mapDirty=true,mapT=0;
 var MS=MW/(MX1-MX0),DPR=Math.min(window.devicePixelRatio||1,2);
 mapC.style.width=MW+'px';mapC.style.height=MH+'px';mapC.width=MW*DPR;mapC.height=MH*DPR;
-function mpx(x){return (x-MX0)*MS;}function mpy(z){return (z-MZ0)*MS;}
+var mzm=1,mcx=(MX0+MX1)/2,mcz=(MZ0+MZ1)/2,mFollow=true,MZMAX=7;
+function mpx(x){return (x-mcx)*MS*mzm+MW/2;}function mpy(z){return (z-mcz)*MS*mzm+MH/2;}
+function mClamp(){var hw=MW/2/(MS*mzm),hh=MH/2/(MS*mzm);
+  mcx=Math.max(MX0+hw,Math.min(MX1-hw,mcx));mcz=Math.max(MZ0+hh,Math.min(MZ1-hh,mcz));
+  $('bMapReset').style.visibility=(mzm>1.01&&!mapMin)?'visible':'hidden';mapDirty=true;}
+function mWorld(cx,cy){var r=mapC.getBoundingClientRect();return {x:mcx+(cx-r.left-MW/2)/(MS*mzm),z:mcz+(cy-r.top-MH/2)/(MS*mzm)};}
 var ZCOL={1:'#b8322a',2:'#c9c2b0',3:'#e9a9b9',4:'#9a8a6a',5:'#8a7a50',7:'#d8c7a2',8:'#cdbb90',9:'#8a5034',11:'#c0392b',12:'#d9a83a',15:'#3f8a8a',16:'#f2f0ea',17:'#34508a'};
 var ZCH={1:'門',4:'像',7:'集',8:'道',9:'賢',11:'禮',12:'仁',15:'信',16:'義',17:'智'};
 function drawMap(mx,mz,dir){
   var g=mapG,i,z;g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,MW,MH);
   g.fillStyle=night?'rgba(20,28,50,.85)':'rgba(60,80,50,.82)';g.fillRect(0,0,MW,MH);
-  g.strokeStyle='rgba(220,200,150,.6)';g.lineWidth=2.4;g.beginPath();g.moveTo(mpx(4),mpy(72));g.lineTo(mpx(X),mpy(72));g.stroke();
+  g.strokeStyle='rgba(220,200,150,.6)';g.lineWidth=2.4*Math.sqrt(mzm);g.beginPath();g.moveTo(mpx(4),mpy(72));g.lineTo(mpx(X),mpy(72));g.stroke();
   for(i=ZONES.length-1;i>=0;i--){z=ZONES[i];var s=z[0],on=!!visited[s];
-    g.globalAlpha=on?1:0.42;g.fillStyle=ZCOL[s]||'#888';g.fillRect(mpx(z[1]),mpy(z[3]),(z[2]-z[1])*MS,(z[4]-z[3])*MS);
-    if(on&&s>=7){g.globalAlpha=1;g.strokeStyle='#ffd97a';g.lineWidth=1;g.strokeRect(mpx(z[1])+0.5,mpy(z[3])+0.5,(z[2]-z[1])*MS-1,(z[4]-z[3])*MS-1);}}
-  g.globalAlpha=1;g.fillStyle='#5a3a1e';g.beginPath();g.arc(mpx(0),mpy(30),2.6,0,7);g.fill();
-  g.font='bold 9px '+FONT;g.textAlign='center';g.textBaseline='middle';
+    g.globalAlpha=on?1:0.42;g.fillStyle=ZCOL[s]||'#888';g.fillRect(mpx(z[1]),mpy(z[3]),(z[2]-z[1])*MS*mzm,(z[4]-z[3])*MS*mzm);
+    if(on&&s>=7){g.globalAlpha=1;g.strokeStyle='#ffd97a';g.lineWidth=1;g.strokeRect(mpx(z[1])+0.5,mpy(z[3])+0.5,(z[2]-z[1])*MS*mzm-1,(z[4]-z[3])*MS*mzm-1);}}
+  g.globalAlpha=1;g.fillStyle='#5a3a1e';g.beginPath();g.arc(mpx(0),mpy(30),2.6*Math.sqrt(mzm),0,7);g.fill();
+  g.font='bold '+Math.round(Math.min(16,9+(mzm-1)*2))+'px '+FONT;g.textAlign='center';g.textBaseline='middle';
   for(i=0;i<ZONES.length;i++){z=ZONES[i];var c=ZCH[z[0]];if(!c)continue;var cx=mpx((z[1]+z[2])/2),cy=mpy((z[3]+z[4])/2);if(z[0]===4)cy=mpy(30)-7;
     g.fillStyle=(z[0]===16||z[0]===2||z[0]===7||z[0]===8)?'#3a2a1a':'#fff6dc';g.fillText(c,cx,cy);}
   if(mx!==null){var px=mpx(mx),py=mpy(mz);
     if(px>=-2&&px<=MW+2&&py>=-2&&py<=MH+2){g.save();g.translate(px,py);g.rotate(dir);
       g.fillStyle='#ff4a3a';g.strokeStyle='#fff';g.lineWidth=1.2;g.beginPath();g.moveTo(0,-7);g.lineTo(4.5,4.5);g.lineTo(0,2);g.lineTo(-4.5,4.5);g.closePath();g.fill();g.stroke();g.restore();}}
-  var n=0;for(i in visited)if(visited[i]&&i>=1&&i<=17)n++;$('mapCnt').textContent=n+'/17';
+  var n=0;for(i in visited)if(visited[i]&&i>=1&&i<=17)n++;g.font='bold 10px '+FONT;g.textAlign='left';g.textBaseline='bottom';g.fillStyle='rgba(0,0,0,.55)';g.fillRect(2,MH-15,34,13);g.fillStyle='#ffd97a';g.fillText('到訪 '+n+'/17',4,MH-3);
 }
 var lastMk='';
 function mapTick(tm){
@@ -1118,11 +1124,12 @@ function mapTick(tm){
   if(walk){x=feet.x;z=feet.z;d=-yaw;}
   else{var cd=new THREE.Vector3();camera.getWorldDirection(cd);d=Math.atan2(cd.x,-cd.z);
     if(camera.position.y-(zoneAt(camera.position)>=7?45:0)>60){x=target.x;z=target.z;}else{x=camera.position.x;z=camera.position.z;}}
+  if(mFollow&&mzm>1.01){mcx=x;mcz=z;mClamp();}
   var k=x.toFixed(1)+','+z.toFixed(1)+','+d.toFixed(2);if(k===lastMk&&!mapDirty)return;lastMk=k;mapDirty=false;drawMap(x,z,d);
 }
 var mapMin=false;
 try{mapMin=localStorage.getItem('conlns_mapmin')==='1';}catch(e){}
-function setMapMin(v){mapMin=v;mapC.style.display=v?'none':'block';$('bMapMin').textContent=v?'地圖':'－';mapDirty=true;try{localStorage.setItem('conlns_mapmin',v?'1':'0');}catch(e){}}
+function setMapMin(v){mapMin=v;mapC.style.display=v?'none':'block';$('bMapFollow').style.display=v?'none':'';$('bMapReset').style.display=v?'none':'';$('bMapReset').style.visibility=(mzm>1.01&&!v)?'visible':'hidden';$('bMapMin').textContent=v?'地圖':'－';mapDirty=true;try{localStorage.setItem('conlns_mapmin',v?'1':'0');}catch(e){}}
 $('bMapMin').addEventListener('click',function(){setMapMin(!mapMin);});
 function teleport(i){
   var s=STOPS[i];if(!allSolids.length)buildSolids();
@@ -1130,13 +1137,41 @@ function teleport(i){
   var gy=groundAt(s.c.x,s.c.y,s.c.z);if(gy===null)return;
   feet.set(s.c.x,gy,s.c.z);yaw=Math.atan2(-(s.o.x-s.c.x),-(s.o.z-s.c.z));pitch=0;refreshNear(true);curZone=-2;
 }
-function mapPick(e,cx,cy){
-  var r=mapC.getBoundingClientRect(),x=MX0+(cx-r.left)/MS,z=MZ0+(cy-r.top)/MS,zn=zoneAt({x:x,z:z});
+function mapPick(cx,cy){
+  var w=mWorld(cx,cy),zn=zoneAt(w);
   if(zn<0)return;hideInfo();
   if(walk){teleport(zn);markVisited(zn);}else{stopAuto();go(zn);}
 }
-mapC.addEventListener('touchend',function(e){e.preventDefault();var t=e.changedTouches[0];mapPick(e,t.clientX,t.clientY);},{passive:false});
-mapC.addEventListener('click',function(e){mapPick(e,e.clientX,e.clientY);});
+var mg=null;
+function mDist(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);}
+mapC.addEventListener('touchstart',function(e){e.preventDefault();e.stopPropagation();
+  if(e.touches.length===1){var t=e.touches[0];mg={m:'tap',x:t.clientX,y:t.clientY,lx:t.clientX,ly:t.clientY,tm:Date.now()};}
+  else if(e.touches.length>=2){var a=e.touches[0],c=e.touches[1],mx=(a.clientX+c.clientX)/2,my=(a.clientY+c.clientY)/2;
+    mg={m:'pinch',d0:mDist(a,c),z0:mzm,w:mWorld(mx,my)};}
+},{passive:false});
+mapC.addEventListener('touchmove',function(e){e.preventDefault();e.stopPropagation();if(!mg)return;
+  if(mg.m==='pinch'&&e.touches.length>=2){var a=e.touches[0],c=e.touches[1],mx=(a.clientX+c.clientX)/2,my=(a.clientY+c.clientY)/2,r=mapC.getBoundingClientRect();
+    mzm=Math.max(1,Math.min(MZMAX,mg.z0*mDist(a,c)/mg.d0));
+    mcx=mg.w.x-(mx-r.left-MW/2)/(MS*mzm);mcz=mg.w.z-(my-r.top-MH/2)/(MS*mzm);mFollow=false;mClamp();drawNow();}
+  else if(e.touches.length===1&&mg.m!=='pinch'){var t=e.touches[0];
+    if(mg.m==='tap'&&Math.abs(t.clientX-mg.x)+Math.abs(t.clientY-mg.y)>6)mg.m='pan';
+    if(mg.m==='pan'&&mzm>1.01){mcx-=(t.clientX-mg.lx)/(MS*mzm);mcz-=(t.clientY-mg.ly)/(MS*mzm);mFollow=false;mClamp();drawNow();}
+    mg.lx=t.clientX;mg.ly=t.clientY;}
+},{passive:false});
+mapC.addEventListener('touchend',function(e){e.preventDefault();e.stopPropagation();
+  if(mg&&mg.m==='tap'&&e.touches.length===0&&Date.now()-mg.tm<450){var t=e.changedTouches[0];mapPick(t.clientX,t.clientY);}
+  if(e.touches.length===0)mg=null;else if(mg&&mg.m==='pinch')mg={m:'pan',x:0,y:0,lx:e.touches[0].clientX,ly:e.touches[0].clientY,tm:0};
+},{passive:false});
+var mmd=null;
+mapC.addEventListener('mousedown',function(e){e.stopPropagation();mmd={x:e.clientX,y:e.clientY,lx:e.clientX,ly:e.clientY,mv:false};});
+window.addEventListener('mousemove',function(e){if(!mmd)return;if(Math.abs(e.clientX-mmd.x)+Math.abs(e.clientY-mmd.y)>4)mmd.mv=true;
+  if(mmd.mv&&mzm>1.01){mcx-=(e.clientX-mmd.lx)/(MS*mzm);mcz-=(e.clientY-mmd.ly)/(MS*mzm);mFollow=false;mClamp();drawNow();}mmd.lx=e.clientX;mmd.ly=e.clientY;});
+window.addEventListener('mouseup',function(e){if(mmd&&!mmd.mv&&e.target===mapC)mapPick(e.clientX,e.clientY);mmd=null;});
+mapC.addEventListener('wheel',function(e){e.preventDefault();e.stopPropagation();var w=mWorld(e.clientX,e.clientY),r=mapC.getBoundingClientRect();
+  mzm=Math.max(1,Math.min(MZMAX,mzm*(e.deltaY>0?0.85:1.18)));mcx=w.x-(e.clientX-r.left-MW/2)/(MS*mzm);mcz=w.z-(e.clientY-r.top-MH/2)/(MS*mzm);mFollow=false;mClamp();drawNow();},{passive:false});
+function drawNow(){mapT=0;lastMk='';mapTick(performance.now());}
+$('bMapReset').addEventListener('click',function(){mzm=1;mcx=(MX0+MX1)/2;mcz=(MZ0+MZ1)/2;mFollow=true;mClamp();drawNow();});
+$('bMapFollow').addEventListener('click',function(){if(mzm<1.01)mzm=3;mFollow=true;mClamp();drawNow();});
 setMapMin(mapMin);
 try{if(localStorage.getItem('conlns_night')==='1')setNight(true);}catch(e){}
 
