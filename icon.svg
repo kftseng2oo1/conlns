@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="75%">
+      <stop offset="0" stop-color="#5a2a1a"/>
+      <stop offset="0.55" stop-color="#2e1710"/>
+      <stop offset="1" stop-color="#140b08"/>
+    </radialGradient>
+    <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#ffe3a0"/>
+      <stop offset="0.6" stop-color="#f0b850"/>
+      <stop offset="1" stop-color="#c98a2a"/>
+    </radialGradient>
+    <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#4a2c14"/>
+      <stop offset="0.45" stop-color="#7a5026"/>
+      <stop offset="1" stop-color="#3a2210"/>
+    </linearGradient>
+    <linearGradient id="step" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9c79a"/>
+      <stop offset="1" stop-color="#8a7350"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+
+  <!-- 金色光輪 -->
+  <circle cx="256" cy="196" r="128" fill="url(#halo)"/>
+  <circle cx="256" cy="196" r="140" fill="none" stroke="#e8c06a" stroke-width="4" opacity=".55"/>
+
+  <!-- 宮殿屋簷剪影（光輪後方左右） -->
+  <path d="M40 300 L120 262 L200 300 Z" fill="#1e0f0a" opacity=".85"/>
+  <path d="M312 300 L392 262 L472 300 Z" fill="#1e0f0a" opacity=".85"/>
+  <rect x="64" y="298" width="112" height="30" fill="#1e0f0a" opacity=".85"/>
+  <rect x="336" y="298" width="112" height="30" fill="#1e0f0a" opacity=".85"/>
+
+  <!-- 天命大道 階梯（透視） -->
+  <path d="M206 330 L306 330 L420 512 L92 512 Z" fill="url(#step)"/>
+  <g stroke="#6a5538" stroke-width="3" opacity=".7">
+    <line x1="200" y1="342" x2="312" y2="342"/>
+    <line x1="192" y1="356" x2="320" y2="356"/>
+    <line x1="182" y1="372" x2="330" y2="372"/>
+    <line x1="171" y1="390" x2="341" y2="390"/>
+    <line x1="158" y1="411" x2="354" y2="411"/>
+    <line x1="143" y1="435" x2="369" y2="435"/>
+    <line x1="126" y1="462" x2="386" y2="462"/>
+    <line x1="107" y1="492" x2="405" y2="492"/>
+  </g>
+
+  <!-- 孔子行教像剪影 -->
+  <g fill="url(#bronze)">
+    <rect x="218" y="314" width="76" height="18" rx="3" fill="#3a2414"/>
+    <path d="M256 128 C 233 128 226 146 228 160 C 230 172 238 180 256 181 C 274 180 282 172 284 160 C 286 146 279 128 256 128 Z"/>
+    <rect x="246" y="98" width="20" height="34" rx="3"/>
+    <rect x="232" y="124" width="48" height="8" rx="3"/>
+    <path d="M246 178 L266 178 L262 200 L250 200 Z"/>
+    <path d="M222 196 C 238 188 274 188 290 196 L 300 236 C 302 270 304 296 310 316 L 202 316 C 208 296 210 270 212 236 Z"/>
+    <path d="M206 222 C 228 236 284 236 306 222 L 300 258 C 280 270 232 270 212 258 Z" fill="#5e3a1a"/>
+    <rect x="243" y="234" width="26" height="22" rx="6" fill="#8a5e2e"/>
+  </g>
+  <path d="M248 180 L256 214 L264 180 Z" fill="#2a1a0e"/>
+
+  <!-- 杏花 -->
+  <g fill="#f6c3cf">
+    <circle cx="52" cy="430" r="13"/><circle cx="78" cy="452" r="10"/><circle cx="40" cy="468" r="11"/><circle cx="70" cy="486" r="13"/><circle cx="30" cy="500" r="9"/>
+    <circle cx="460" cy="430" r="13"/><circle cx="434" cy="452" r="10"/><circle cx="472" cy="468" r="11"/><circle cx="442" cy="486" r="13"/><circle cx="482" cy="500" r="9"/>
+  </g>
+  <g fill="#fbe4ea">
+    <circle cx="52" cy="430" r="4"/><circle cx="70" cy="486" r="4"/><circle cx="460" cy="430" r="4"/><circle cx="442" cy="486" r="4"/>
+  </g>
+
+  <!-- 朱印「學」 -->
+  <rect x="402" y="40" width="72" height="72" rx="8" fill="#b8231a"/>
+  <rect x="409" y="47" width="58" height="58" rx="4" fill="none" stroke="#f3d6b0" stroke-width="3"/>
+  <text x="438" y="96" text-anchor="middle" font-size="50" font-weight="700" fill="#fbe8c8" font-family="Noto Serif CJK TC,Noto Serif TC,Songti TC,serif">學</text>
+</svg>

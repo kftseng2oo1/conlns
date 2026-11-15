@@ -8,6 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="尼山大學堂">
 <meta name="theme-color" content="#1b1410">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <title>尼山聖境・大學堂 3D 導覽</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -657,13 +660,8 @@ window.__ok=true;
 
 /* =================== PWA =================== */
 try{
-  var ic=document.createElement('canvas');ic.width=ic.height=512;var g=ic.getContext('2d');
-  g.fillStyle='#1b1410';g.fillRect(0,0,512,512);g.fillStyle='#c9a24a';g.beginPath();g.moveTo(256,70);g.lineTo(470,200);g.lineTo(42,200);g.fill();
-  g.fillRect(90,210,332,26);var i;for(i=0;i<5;i++)g.fillRect(110+i*68,250,26,150);g.fillRect(70,410,372,30);
-  g.fillStyle='#f3e6c8';g.font='bold 80px '+FONT;g.textAlign='center';g.fillText('學',256,180);
-  var icon=ic.toDataURL('image/png');
-  var at=document.createElement('link');at.rel='apple-touch-icon';at.href=icon;document.head.appendChild(at);
-  var man={name:'尼山聖境・大學堂 3D 導覽',short_name:'尼山大學堂',display:'standalone',background_color:'#1b1410',theme_color:'#1b1410',start_url:location.href.split('#')[0],icons:[{src:icon,sizes:'512x512',type:'image/png'}]};
+  var abs=function(f){return new URL(f,location.href).href;};
+    var man={name:'尼山聖境・大學堂 3D 導覽',short_name:'尼山大學堂',display:'standalone',background_color:'#1b1410',theme_color:'#1b1410',start_url:location.href.split('#')[0],icons:[{src:abs('icon-192.png'),sizes:'192x192',type:'image/png'},{src:abs('icon-512.png'),sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
   var ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(new Blob([JSON.stringify(man)],{type:'application/manifest+json'}));document.head.appendChild(ml);
 }catch(err){}
 })();
