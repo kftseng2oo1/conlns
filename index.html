@@ -5697,7 +5697,7 @@ var BEAST_DEFS={
     awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[440,523,659,880,1047].forEach(function(f,i){bsTone(f,2.4,0.07,'sine',i*0.12);});bsGong(YU);
       for(var k=0;k<6;k++)bsRing(b,k%2?0xe6c97a:0x6fe3d6,k*220);}},
   /* 禮廳 朱雀：點頭長鳴、點翅振翅、點尾羽開屏、點火焰台火焰竄高；連點五下浴火重生、繞殿飛翔 */
-  zhuque:{glow:/^(feather|tail_eye|plumage|plume\d|zhuque_eye)$/,glowColor:0xff7a20,dflt:'wing',
+  zhuque:{glow:/^(feather|feather_orn|tail_eye|plumage|wisp|breast|zhuque_eye)$/,glowColor:0xff7a20,dflt:'wing',
     part:function(n){if(/^Tail_/.test(n))return 'tail';if(/^(Neck_|Head$|Crest$|Beak)/.test(n))return 'head';if(/^Wing_/.test(n))return 'wing';if(/^(Altar$|Flame_)/.test(n))return 'altar';return null;},
     tap:{
       head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.2);bsTone(784,1.1,0.12,'triangle',0,1175);bsTone(1175,0.9,0.08,'sine',0.35,988);bsTone(988,1.2,0.07,'sine',0.75,1568);bsTone(392,1.6,0.05,'sine');}},
