@@ -37,7 +37,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #menu .it span{color:#c9a24a;font-size:12px;width:22px;text-align:right}
 #menu .it.cur{background:#b8862f33}
 #hint{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 58px);text-align:center;font-size:12px;color:#e9d9b4;text-shadow:0 1px 3px #000;pointer-events:none;transition:opacity 1s}
-#info{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 58px);max-width:520px;margin:0 auto;background:#1f1610f2;border:1px solid #e0b860aa;border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px #000a;display:none;z-index:4}
+#info{z-index:6;position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 58px);max-width:520px;margin:0 auto;background:#1f1610f2;border:1px solid #e0b860aa;border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px #000a;display:none}
 #info .hd{display:flex;align-items:center;gap:8px}
 #info h3{margin:0;flex:1;font-size:16px;color:#f6d88e}
 #info .tx{margin:6px 0 8px;font-size:14px;line-height:1.65;max-height:30vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
@@ -46,6 +46,11 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #zone{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 16px);background:#1f1610cc;border:1px solid #c9a24a66;border-radius:20px;padding:6px 14px;font-size:14px;color:#f0d48e;display:none;pointer-events:none;white-space:nowrap}
 #joy{position:fixed;left:24px;bottom:calc(env(safe-area-inset-bottom) + 64px);width:120px;height:120px;border-radius:50%;background:#ffffff14;border:2px solid #e8c77a66;display:none;pointer-events:none}
 #knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:#e8c77acc;box-shadow:0 2px 8px #0008}
+#mapw{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 50px);z-index:3;background:#1f1610cc;border:1px solid #c9a24a66;border-radius:10px;padding:4px}
+#mapw .mh{display:flex;align-items:center;gap:4px;justify-content:flex-end}
+#mapw .mh span{flex:1;font-size:11px;color:#e8c77a;padding-left:2px}
+.btn.sm{padding:3px 6px;font-size:11px;min-width:0;border-radius:7px}
+#map{display:block;margin-top:4px;border-radius:6px;touch-action:none}
 #upd{position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 60px);background:#b8862f;color:#1b1410;font-weight:bold;border-radius:20px;padding:9px 18px;font-size:14px;box-shadow:0 4px 16px #000a;display:none;z-index:8;white-space:nowrap}
 #load{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#1b1410;z-index:9;color:#e8c77a;letter-spacing:4px;transition:opacity .6s}
 #load .s{font-size:12px;color:#a8946c;margin-top:10px;letter-spacing:1px}
@@ -63,6 +68,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 </div>
 <div id="hint">單指旋轉・雙指縮放／平移・點物件看解說</div>
 <div id="zone"></div>
+<div id="mapw"><div class="mh"><span id="mapCnt">0/17</span><button class="btn sm" id="bNight">☾ 夜</button><button class="btn sm" id="bMapMin">－</button></div><canvas id="map"></canvas></div>
 <div id="info"><div class="hd"><h3 id="iTitle"></h3><button class="btn" id="bInfoX">✕</button></div><div class="tx" id="iText"></div><button class="btn" id="bGoStop">前往此站導覽</button></div>
 <div id="joy"><div id="knob"></div></div>
 <div id="card">
@@ -99,7 +105,7 @@ var scene=new THREE.Scene();
 scene.background=new THREE.Color(0xbfd3e0);
 scene.fog=new THREE.Fog(0xbfd3e0,600,1700);
 var camera=new THREE.PerspectiveCamera(58,1,0.3,3000);
-scene.add(new THREE.HemisphereLight(0xfff4e0,0x5a5040,0.85));
+var hemi=new THREE.HemisphereLight(0xfff4e0,0x5a5040,0.85);scene.add(hemi);
 var sun=new THREE.DirectionalLight(0xffffff,0.75);sun.position.set(-300,500,250);scene.add(sun);
 var sun2=new THREE.DirectionalLight(0xfff0d0,0.25);sun2.position.set(300,200,-300);scene.add(sun2);
 
@@ -339,19 +345,41 @@ box(124,14.7,228,M(0xd2c8b0),X,37.35,-132);         /* 大學堂後段基座 */
 /* 孔子巨型銅像 72m */
 loadMsg.textContent='鑄造孔子銅像…';
 (function(){
-  var bz=M(0x8a6638),g=new THREE.Group(),ped=M(0x9a9488);
+  /* 依〈先師孔子行教像〉：寬袍大袖、拱手於胸、長髯、佩劍、頭戴冠 */
+  var bz=M(0x8a6638),dk=M(0x6a4c26),hi=M(0xa07a44),g=new THREE.Group(),ped=M(0x9a9488),i;
   box(26,2,26,ped,0,31,30);box(18,4,18,ped,0,34,30);
-  var pts=[],p=[[0,0],[10,0],[9.6,6],[8.4,18],[7.6,32],[7.4,42],[8.2,47],[7.0,50.5],[3.4,52.5],[0,53]];
-  for(var i=0;i<p.length;i++)pts.push(new THREE.Vector2(p[i][0],p[i][1]));
-  var robe=new THREE.Mesh(new THREE.LatheGeometry(pts,24),bz);g.add(robe);
-  var sl=new THREE.Mesh(new THREE.BoxGeometry(17,6,7),bz);sl.position.set(0,36,5.5);g.add(sl);
-  var hand=new THREE.Mesh(new THREE.BoxGeometry(4,3.4,2.6),bz);hand.position.set(0,37,9.4);g.add(hand);
-  var nk=new THREE.Mesh(new THREE.CylinderGeometry(1.8,2.2,2.5,12),bz);nk.position.y=53.6;g.add(nk);
-  var hd=new THREE.Mesh(new THREE.SphereGeometry(4.4,18,14),bz);hd.position.y=58.4;hd.scale.set(1,1.12,1);g.add(hd);
-  var bd=new THREE.Mesh(new THREE.ConeGeometry(1.8,5,8),bz);bd.rotation.x=Math.PI;bd.position.set(0,52.8,3.2);g.add(bd);
-  var cr=new THREE.Mesh(new THREE.BoxGeometry(2.6,2.4,6.4),bz);cr.position.y=64.4;g.add(cr);
-  var bn=new THREE.Mesh(new THREE.BoxGeometry(10,0.5,1),bz);bn.position.y=63.2;g.add(bn);
-  g.position.set(0,36,30);tag(g,'statue');scene.add(g);
+  var P=[[0,0],[11.5,0],[11.0,2.5],[9.6,12],[8.6,24],[8.1,34],[8.5,42],[8.3,47],[7.0,50.5],[3.8,52.6],[0,53]],pts=[];
+  for(i=0;i<P.length;i++)pts.push(new THREE.Vector2(P[i][0],P[i][1]));
+  var lg=new THREE.LatheGeometry(pts,40),pa=lg.attributes.position,v;
+  for(i=0;i<pa.count;i++){var x=pa.getX(i),y=pa.getY(i),z=pa.getZ(i),a=Math.atan2(z,x),k=1+0.045*Math.sin(a*16)*Math.max(0,1-y/40);
+    pa.setX(i,x*k);pa.setZ(i,z*k*(z>0?1.08:0.95));}
+  lg.computeVertexNormals();g.add(new THREE.Mesh(lg,bz));
+  /* 大袖：自肘部垂至膝 */
+  for(var s=-1;s<=1;s+=2){
+    var sl=new THREE.Mesh(new THREE.CylinderGeometry(2.4,4.6,24,14),bz);sl.position.set(s*7.2,30,3.4);sl.rotation.z=s*0.13;sl.rotation.x=-0.12;g.add(sl);
+    var ua=new THREE.Mesh(new THREE.CylinderGeometry(2.1,2.4,9,10),bz);ua.position.set(s*7.6,44.5,1.5);ua.rotation.z=s*0.35;g.add(ua);
+    var fa=new THREE.Mesh(new THREE.CylinderGeometry(2.0,2.3,7.5,10),bz);fa.position.set(s*3.8,40.6,6.2);fa.rotation.z=s*1.25;fa.rotation.y=s*0.5;g.add(fa);
+  }
+  var hands=new THREE.Mesh(new THREE.SphereGeometry(1.9,12,10),hi);hands.scale.set(1.2,1.0,0.9);hands.position.set(0,40.4,8.6);g.add(hands);
+  /* 交領、腰帶、佩劍 */
+  for(s=-1;s<=1;s+=2){var cl=new THREE.Mesh(new THREE.BoxGeometry(1.1,10,0.6),dk);cl.position.set(s*1.6,46.5,6.6);cl.rotation.z=s*0.45;cl.rotation.x=-0.25;g.add(cl);}
+  var belt=new THREE.Mesh(new THREE.TorusGeometry(8.25,0.55,8,40),dk);belt.rotation.x=Math.PI/2;belt.position.y=36;belt.scale.set(1,1.06,1);g.add(belt);
+  var sash=new THREE.Mesh(new THREE.BoxGeometry(1.4,12,0.5),dk);sash.position.set(0.8,29.5,9.1);sash.rotation.x=-0.1;g.add(sash);
+  var sw=new THREE.Group(),bl=new THREE.Mesh(new THREE.BoxGeometry(0.9,20,0.5),hi);bl.position.y=-6;sw.add(bl);
+  var gd=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.6,1.0),dk);gd.position.y=4;sw.add(gd);
+  var hl=new THREE.Mesh(new THREE.CylinderGeometry(0.35,0.35,3.2,8),dk);hl.position.y=5.8;sw.add(hl);
+  sw.position.set(-8.9,34,1.5);sw.rotation.z=-0.55;sw.rotation.x=0.25;g.add(sw);
+  /* 頭、冠、長髯 */
+  var nk=new THREE.Mesh(new THREE.CylinderGeometry(1.9,2.3,2.6,14),bz);nk.position.y=53.8;g.add(nk);
+  var hd=new THREE.Mesh(new THREE.SphereGeometry(4.2,22,16),bz);hd.position.y=58.6;hd.scale.set(0.95,1.18,1.02);g.add(hd);
+  for(s=-1;s<=1;s+=2){var er=new THREE.Mesh(new THREE.SphereGeometry(1.0,10,8),bz);er.scale.set(0.5,1.3,0.8);er.position.set(s*4.0,58.5,0);g.add(er);}
+  var ns=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.8,8),bz);ns.position.set(0,58.6,4.1);ns.rotation.x=Math.PI/2+0.3;g.add(ns);
+  var mu=new THREE.Mesh(new THREE.BoxGeometry(3.6,0.7,1.2),dk);mu.position.set(0,57,3.8);g.add(mu);
+  var bd=new THREE.Mesh(new THREE.ConeGeometry(2.1,9.5,10),dk);bd.rotation.x=Math.PI+0.12;bd.position.set(0,51.8,4.6);g.add(bd);
+  var cw=new THREE.Mesh(new THREE.BoxGeometry(3.0,3.4,6.8),dk);cw.position.y=64.8;g.add(cw);
+  var cb=new THREE.Mesh(new THREE.CylinderGeometry(3.3,3.3,1.4,20),dk);cb.position.y=63.0;g.add(cb);
+  var pin=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.3,11,6),hi);pin.rotation.z=Math.PI/2;pin.position.y=65;g.add(pin);
+  g.rotation.x=0.025;g.position.set(0,36,30);tag(g,'statue');scene.add(g);
 })();
 
 /* =================== 大學堂 =================== */
@@ -518,7 +546,7 @@ room({cx:X,cz:-181.5,w:53,d:53,y0:45,h:27,wall:0xc49a40,floor:0xb8963e,ceil:0x8a
     for(n=0;n<N;n++){a=n/N*Math.PI*2;var cd=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.16,1,6),cr);cd.position.set(Math.cos(a)*R,Y+0.6,Math.sin(a)*R);lg.add(cd);}}
   var rod=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.1,12,4),rim);rod.position.y=11;lg.add(rod);
   lg.position.set(X,62,-181.5);tag(lg,'chandelier');scene.add(lg);window._chand=lg;
-  var gl=new THREE.PointLight(0xffd9a0,0.6,60);gl.position.set(X,60,-181.5);scene.add(gl);
+  var gl=new THREE.PointLight(0xffd9a0,0.6,60);gl.position.set(X,60,-181.5);scene.add(gl);window._chandLight=gl;
 })();
 
 /* 五常 匾牌 */
@@ -607,6 +635,103 @@ room({cx:X,cz:ZN,w:30,d:30,y0:45,h:7,wall:0x1f2a44,floor:0x1a2236,ceil:null,s:'o
   TAG=null;tag(emblem('智','水・玄武','#1f2a44','#bcd8ff',X,49,ZN-14.6,0,2.2),'stop:17');
 })();
 
+/* =================== 五方神獸雕塑 =================== */
+function pedestal(r,h,m,x,y,z){var p=cyl(r,r*1.08,h,24,m,x,y+h/2,z);var c=cyl(r*1.12,r*1.12,0.3,24,m,x,y+h-0.05,z);return p;}
+/* 青龍：盤旋上升的龍身 */
+function dragon(mat,gold){
+  var g=new THREE.Group(),pts=[],i,t,a,N=60;
+  for(i=0;i<=N;i++){t=i/N;a=t*Math.PI*3.3;var r=3.0*(1-0.45*t);pts.push(new THREE.Vector3(Math.cos(a)*r,1.0+t*7.2+Math.sin(t*18)*0.35,Math.sin(a)*r));}
+  var cv=new THREE.CatmullRomCurve3(pts);
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(cv,160,0.55,10,false),mat));
+  var tail=new THREE.Mesh(new THREE.ConeGeometry(0.55,2.2,10),mat);var p0=cv.getPoint(0),t0=cv.getTangent(0);
+  tail.position.copy(p0).addScaledVector(t0,-1.0);tail.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),t0.clone().negate());g.add(tail);
+  for(i=2;i<N;i+=3){var p=cv.getPoint(i/N),tg=cv.getTangent(i/N),fin=new THREE.Mesh(new THREE.ConeGeometry(0.18,0.75,4),gold);
+    fin.position.copy(p).add(new THREE.Vector3(0,0.55,0));fin.rotation.z=0.3*Math.sin(i);g.add(fin);}
+  var legsAt=[0.28,0.42,0.62,0.76];
+  for(i=0;i<4;i++){var lp=cv.getPoint(legsAt[i]),lt=cv.getTangent(legsAt[i]),side=new THREE.Vector3().crossVectors(lt,new THREE.Vector3(0,1,0)).normalize().multiplyScalar(i%2?1:-1);
+    var leg=new THREE.Mesh(new THREE.CylinderGeometry(0.16,0.22,1.3,6),mat);leg.position.copy(lp).addScaledVector(side,0.75).add(new THREE.Vector3(0,-0.45,0));leg.rotation.z=(i%2?-1:1)*0.6;g.add(leg);
+    for(var k=-1;k<=1;k++){var cl=new THREE.Mesh(new THREE.ConeGeometry(0.07,0.45,4),gold);cl.position.copy(leg.position).add(new THREE.Vector3(k*0.15,-0.7,0.1));cl.rotation.x=Math.PI;g.add(cl);}}
+  /* 龍首 */
+  var end=cv.getPoint(1),te=cv.getTangent(1),h=new THREE.Group();
+  var sk=new THREE.Mesh(new THREE.BoxGeometry(1.1,0.9,1.3),mat);h.add(sk);
+  var sn=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.5,1.2),mat);sn.position.set(0,-0.08,1.1);h.add(sn);
+  var jw=new THREE.Mesh(new THREE.BoxGeometry(0.75,0.22,1.1),mat);jw.position.set(0,-0.5,1.0);jw.rotation.x=0.35;h.add(jw);
+  for(k=-1;k<=1;k+=2){var hn=new THREE.Mesh(new THREE.ConeGeometry(0.12,1.6,6),gold);hn.position.set(k*0.35,0.75,-0.5);hn.rotation.x=-1.0;h.add(hn);
+    var ey=new THREE.Mesh(new THREE.SphereGeometry(0.13,8,6),gold);ey.position.set(k*0.36,0.22,0.55);h.add(ey);
+    var wh=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,2.0,4),gold);wh.position.set(k*0.7,-0.1,1.6);wh.rotation.z=k*1.2;wh.rotation.x=0.4;h.add(wh);
+    var mn=new THREE.Mesh(new THREE.ConeGeometry(0.2,0.9,5),gold);mn.position.set(k*0.55,0.1,-0.6);mn.rotation.z=k*1.3;h.add(mn);}
+  var pearl=new THREE.Mesh(new THREE.SphereGeometry(0.42,16,12),M(0xfff2c0,{emissive:0xffcc66,emissiveIntensity:0.6}));pearl.position.set(0,-0.1,2.6);h.add(pearl);
+  h.position.copy(end);h.lookAt(end.clone().add(new THREE.Vector3(te.x,0,te.z).normalize()));g.add(h);
+  return g;
+}
+/* 白虎：漢白玉加灰紋 */
+function tiger(){
+  var tx=ctex(256,256,function(g,w,h){g.fillStyle='#f4f1ea';g.fillRect(0,0,w,h);g.fillStyle='#b4b0a8';for(var i=0;i<9;i++){g.beginPath();var y=i*30+8;g.moveTo(0,y);g.quadraticCurveTo(w*0.5,y+18,w,y-4);g.lineTo(w,y+6);g.quadraticCurveTo(w*0.5,y+26,0,y+9);g.fill();}});
+  var m=new THREE.MeshLambertMaterial({map:tx}),pm=M(0xf2efe8),g=new THREE.Group(),i;
+  var b=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),m);b.scale.set(0.95,0.85,2.1);b.position.set(0,2.0,0);g.add(b);
+  var ch=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),m);ch.scale.set(1.0,1.05,1.0);ch.position.set(0,2.2,1.5);g.add(ch);
+  var L=[[0.6,1.5,0.15],[-0.6,1.7,-0.1],[0.6,-1.5,-0.1],[-0.6,-1.4,0.15]];
+  for(i=0;i<4;i++){var lg=new THREE.Mesh(new THREE.CylinderGeometry(0.25,0.32,1.9,8),m);lg.position.set(L[i][0],0.95,L[i][1]);lg.rotation.x=L[i][2];g.add(lg);
+    var pw=new THREE.Mesh(new THREE.SphereGeometry(0.38,10,8),pm);pw.scale.set(1,0.6,1.3);pw.position.set(L[i][0],0.15,L[i][1]+0.15);g.add(pw);}
+  var hd=new THREE.Group(),sk=new THREE.Mesh(new THREE.SphereGeometry(0.85,16,12),m);hd.add(sk);
+  var mz=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.6,0.7),pm);mz.position.set(0,-0.25,0.65);hd.add(mz);
+  var ns=new THREE.Mesh(new THREE.SphereGeometry(0.14,8,6),M(0x555555));ns.position.set(0,-0.05,1.02);hd.add(ns);
+  for(i=-1;i<=1;i+=2){var er=new THREE.Mesh(new THREE.ConeGeometry(0.25,0.45,6),m);er.position.set(i*0.55,0.75,-0.1);hd.add(er);
+    var ey=new THREE.Mesh(new THREE.SphereGeometry(0.1,8,6),M(0x2a2a2a));ey.position.set(i*0.3,0.2,0.75);hd.add(ey);}
+  var wang=ctex(64,64,function(g){g.fillStyle='#f4f1ea';g.fillRect(0,0,64,64);g.fillStyle='#555';g.font='bold 50px '+FONT;g.textAlign='center';g.textBaseline='middle';g.fillText('王',32,34);});
+  var fw=new THREE.Mesh(new THREE.PlaneGeometry(0.6,0.6),new THREE.MeshLambertMaterial({map:wang}));fw.position.set(0,0.45,0.78);fw.rotation.x=-0.5;hd.add(fw);
+  hd.position.set(0,3.1,2.55);hd.rotation.x=0.1;g.add(hd);
+  var tp=[],t;for(i=0;i<=12;i++){t=i/12;tp.push(new THREE.Vector3(Math.sin(t*3)*0.6,2.2+t*2.6-Math.pow(t,3)*0.8,-2.0-t*1.6+Math.pow(t,2)*1.2));}
+  g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(tp),30,0.17,6,false),m));
+  return g;
+}
+/* 玄武：龜蛇合體 */
+function xuanwu(){
+  var bz=M(0x3d5248),dk=M(0x2a3a33),g=new THREE.Group(),i;
+  var st=ctex(256,256,function(g2,w,h){g2.fillStyle='#3d5248';g2.fillRect(0,0,w,h);g2.strokeStyle='#c9a24a';g2.lineWidth=5;
+    for(var r=0;r<4;r++)for(var c=0;c<5;c++){var cx=c*56+(r%2?28:0),cy=r*64+20;g2.beginPath();for(var k=0;k<7;k++){var a=k/6*Math.PI*2;g2.lineTo(cx+Math.cos(a)*30,cy+Math.sin(a)*30);}g2.stroke();}});
+  var sh=new THREE.Mesh(new THREE.SphereGeometry(2.4,28,16,0,Math.PI*2,0,Math.PI/2),new THREE.MeshLambertMaterial({map:st}));sh.scale.set(1,0.62,1.2);sh.position.y=1.0;g.add(sh);
+  var pl=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.2,0.5,28),dk);pl.scale.set(1,1,1.2);pl.position.y=0.8;g.add(pl);
+  var nk=new THREE.Mesh(new THREE.CylinderGeometry(0.42,0.5,1.4,10),bz);nk.position.set(0,1.5,3.1);nk.rotation.x=1.1;g.add(nk);
+  var hd=new THREE.Mesh(new THREE.SphereGeometry(0.62,14,10),bz);hd.scale.set(1,0.85,1.3);hd.position.set(0,2.0,3.75);g.add(hd);
+  var F=[[1.9,1.9],[-1.9,1.9],[1.9,-1.9],[-1.9,-1.9]];
+  for(i=0;i<4;i++){var f=new THREE.Mesh(new THREE.SphereGeometry(0.6,10,8),bz);f.scale.set(1.2,0.4,0.8);f.position.set(F[i][0],0.55,F[i][1]);g.add(f);}
+  var pts=[],t;for(i=0;i<=70;i++){t=i/70;var a=t*Math.PI*4.2,r=2.85-t*0.3;pts.push(new THREE.Vector3(Math.cos(a)*r,0.9+t*2.4+Math.sin(t*20)*0.15,Math.sin(a)*r*1.15));}
+  var last=pts[pts.length-1];pts.push(new THREE.Vector3(last.x*0.6,last.y+0.9,last.z*0.6+0.8));pts.push(new THREE.Vector3(0.2,4.3,2.6));
+  var cv=new THREE.CatmullRomCurve3(pts);g.add(new THREE.Mesh(new THREE.TubeGeometry(cv,200,0.28,8,false),M(0x4a6a52)));
+  var sh2=new THREE.Mesh(new THREE.SphereGeometry(0.42,12,10),M(0x4a6a52));sh2.scale.set(1,0.7,1.5);var e=cv.getPoint(1),te=cv.getTangent(1);
+  sh2.position.copy(e);sh2.lookAt(e.clone().add(te));g.add(sh2);
+  return g;
+}
+/* 朱雀：立於火焰之上、展翅 */
+function zhuqueStatue(){
+  var g=new THREE.Group(),red=M(0xc8302a,{emissive:0x3a0800}),gold=M(0xe0b040,{emissive:0x2a1a00}),i;
+  for(i=0;i<9;i++){var a=i/9*Math.PI*2,fl=new THREE.Mesh(new THREE.ConeGeometry(0.45,1.8+((i*7)%3)*0.5,6),M(i%2?0xff8a2a:0xffc040,{emissive:i%2?0x802000:0x804000,emissiveIntensity:0.7}));
+    fl.position.set(Math.cos(a)*1.0,0.9,Math.sin(a)*1.0);g.add(fl);}
+  var b=bird(red,1.25);b.rotation.x=-0.75;b.position.y=3.6;g.add(b);
+  var cr=new THREE.Mesh(new THREE.ConeGeometry(0.18,0.9,5),gold);cr.position.set(0,5.4,1.1);cr.rotation.x=-0.4;g.add(cr);
+  for(i=-2;i<=2;i++){var tf=new THREE.Mesh(new THREE.ConeGeometry(0.16,3.6,5),i%2?gold:red);tf.position.set(i*0.35,1.6,-1.6);tf.rotation.x=-2.3;tf.rotation.z=i*0.18;g.add(tf);}
+  return g;
+}
+(function(){
+  var ped=M(0xd8d2c4),jade=M(0x3a8a7a,{emissive:0x0a2018}),gold=M(0xd9a83a,{emissive:0x2a1a00});
+  /* 信廳 青龍 */
+  TAG='dragon';pedestal(2.6,1.0,M(0x2a4a4a),XE,45,-181.5);TAG=null;
+  var dg=dragon(jade,gold);dg.position.set(XE,46,-181.5);tag(dg,'dragon');scene.add(dg);
+  /* 義廳 白虎 */
+  TAG='tiger';box(3.2,0.9,6.4,ped,XW,45.45,-181.5);TAG=null;
+  var tg=tiger();tg.position.set(XW,45.9,-181.5);tg.rotation.y=Math.PI/2;tag(tg,'tiger');scene.add(tg);
+  /* 智廳 玄武 */
+  TAG='xuanwu';pedestal(3.2,0.6,M(0x2a3450),X+5.5,45,ZN+2);TAG=null;
+  var xw=xuanwu();xw.position.set(X+5.5,45.6,ZN+2);xw.rotation.y=-Math.PI*0.7;tag(xw,'xuanwu');scene.add(xw);
+  /* 禮廳 朱雀 */
+  TAG='zhuque';pedestal(1.9,1.0,M(0x5a1a12),X,45,-140.3);TAG=null;
+  var zq=zhuqueStatue();zq.position.set(X,46,-140.3);tag(zq,'zhuque');scene.add(zq);
+  /* 仁廳 麒麟一對 */
+  for(var s=-1;s<=1;s+=2){TAG='qilinRen';box(4,1.2,5,M(0xb8963e),X+s*9,45.6,-201);TAG=null;
+    var q=qilin(gold);q.scale.set(1.7,1.7,1.7);q.position.set(X+s*9,46.4,-201);q.rotation.y=-s*0.25;tag(q,'qilinRen');scene.add(q);}
+})();
+
 /* 區域標籤 */
 var labels=[
   label('宮殿式大門','德侔天地',0,52,226,8),label('天命大道','260 階・三千杏樹',0,44,150,8),label('孔子銅像','72 公尺',0,86,30,9),
@@ -641,7 +766,7 @@ var STOPS=[
   x:'長廊全長 <b>105 公尺</b>、高 <b>16 公尺</b>（約 5 層樓），宛如金鑾殿。雕刻大師歐陽寧明以山西礦物泥塑創作 <b>30 組、72 尊</b>賢人造像，高 3 至 4 公尺；天花以鎏金做舊斗拱與燈光鋪陳。'},
  {g:'四、七十二賢廊',t:'杏壇講學圖與青鳥',c:V(X,51,-98),o:V(X,56,-124),
   x:'廊端壁畫〈杏壇講學圖〉由西安美院何軍團隊繪製，畫中實繪 70 人，孔子刻意畫大；加上畫前駐足的參觀者，湊成 72 人的意象。廊頂懸掛一隻<b>鎏金先秦青鳥（鸞鳥）</b>。'},
- {g:'五、五常五行殿堂',t:'禮廳・火・朱雀',c:V(X+3,48,-127),o:V(X-2,53,-150),
+ {g:'五、五常五行殿堂',t:'禮廳・火・朱雀',c:V(X+11,50,-128),o:V(X-4,52,-148),
   x:'禮廳五行屬<b>火</b>，守護神獸<b>朱雀</b>，用周代喜慶富麗的紅彩。頂部是層層向內收斂的<b>八角疊層藻井</b>，中心繪朱雀；牆上長卷描繪周代婚宴、禮儀、歌舞、祭祀與朝會，並陳設大量古代樂器。'},
  {g:'五、五常五行殿堂',t:'仁廳・土・麒麟（主殿）',c:V(X,49,-157.5),o:V(X,57,-195),
   x:'仁廳是<b>規模最大</b>的核心主殿：五行屬<b>土</b>、守護神獸<b>麒麟</b>、主色黃。挑高約 <b>27 公尺</b>（約 9 層樓），面積 2,800 平方公尺，可容納 1,500 多人。'},
@@ -649,11 +774,11 @@ var STOPS=[
   x:'仁廳兩側是高二十餘公尺的<b>通天書櫃</b>，共有 <b>9,306 個彩繪木格</b>，讓人置身書海之中。'},
  {g:'五、五常五行殿堂',t:'天立柱與升降水晶燈',c:V(X+21,48,-206),o:V(X+4,61,-176),
   x:'<b>20 支天立柱</b>高近 20 公尺，由陸光正團隊設計，下段刻《論語》、上段刻松竹浮雕。中央的<b>三層蠟燭造型水晶吊燈</b>可升降，專為「天下歸仁」大型展演而設。'},
- {g:'五、五常五行殿堂',t:'信廳（杏亭）・木・青龍',c:V(XE-11,48,-172),o:V(XE+5,53,-188),
+ {g:'五、五常五行殿堂',t:'信廳（杏亭）・木・青龍',c:V(XE-12,49.5,-170),o:V(XE+1,51.5,-183),
   x:'信廳五行屬<b>木</b>、守護神獸<b>青龍</b>，青藍色調。天花是 <b>11 層跌級</b>木雕藻井配藍色背光格扇；牆上以印章構圖法的漆畫，描繪<b>季布一諾、退避三舍、季子掛劍、洗目立信</b>四個誠信故事；角落有夔龍紋「禮榻（龍榻）」。'},
  {g:'五、五常五行殿堂',t:'義廳・金・白虎',c:V(XW+12,51,-171),o:V(XW-8,50,-188),
   x:'義廳五行屬<b>金</b>、方位西方、守護神獸<b>白虎</b>，白金色調，素雅留白，兼有秦漢與古希臘羅馬神殿的氣質。<b>12 根整塊漢白玉立柱</b>高 12 公尺，象徵十二時辰；牆上 3 幅景德鎮粉彩堆白瓷板畫：<b>趙氏孤兒、將相和、桃園三結義</b>。'},
- {g:'五、五常五行殿堂',t:'智廳・水・玄武',c:V(X+4,48,-209),o:V(X,52.5,-230),
+ {g:'五、五常五行殿堂',t:'智廳・水・玄武',c:V(X-6,49,-209.5),o:V(X+1.5,50.5,-228),
   x:'智廳五行屬<b>水</b>、守護神獸<b>玄武神龜</b>。頂部是 <b>96 斗拱</b>托起的天穹與星空，象徵智慧無窮；地面由 <b>960 塊弧形大理石</b>拼成玄武圖騰，與天穹呼應；中央是「<b>孔子問禮於老子</b>」雕塑。'},
  {g:'結',t:'五常五行方位總覽',cut:true,c:V(X+2,215,-105),o:V(X,45,-185),
   x:'由上俯瞰：中央<b>仁（土）</b>，東<b>信（木）</b>、西<b>義（金）</b>、北<b>智（水）</b>，南側入口為<b>禮（火）</b>。<br><small>※ 各廳相對位置依五行方位示意配置，非實際平面圖。</small>'}
@@ -713,7 +838,12 @@ var INFO={
  yi2:{t:'桃園三結義',x:'劉備、關羽、張飛於桃園結為兄弟。景德鎮粉彩堆白瓷板畫。',s:16},
  zhiDome:{t:'96 斗拱天穹',x:'智廳頂部以 <b>96 斗拱</b>承托浩瀚天幕，象徵智慧無窮。',s:17},
  zhiFloor:{t:'玄武圖騰地面',x:'由 <b>960 塊弧形大理石</b>拼成玄武龜圖騰，與天穹上下呼應。',s:17},
- zhiStatue:{t:'孔子問禮於老子',x:'大型雕塑，象徵求教與智慧啟迪。',s:17}
+ zhiStatue:{t:'孔子問禮於老子',x:'大型雕塑，象徵求教與智慧啟迪。',s:17},
+ dragon:{t:'青龍',x:'東方之神，五行屬<b>木</b>，對應春季，守護信廳，象徵「信」。',s:15},
+ tiger:{t:'白虎',x:'西方之神，五行屬<b>金</b>，對應秋季，守護義廳，象徵「義」。',s:16},
+ xuanwu:{t:'玄武',x:'北方之神，龜蛇合體，五行屬<b>水</b>，對應冬季，守護智廳，象徵「智」。',s:17},
+ zhuque:{t:'朱雀',x:'南方之神，五行屬<b>火</b>，對應夏季，守護禮廳，象徵「禮」。',s:11},
+ qilinRen:{t:'麒麟',x:'居中央、五行屬<b>土</b>的仁獸，守護仁廳主殿，象徵「仁」。',s:12}
 };
 
 /* =================== 點選 =================== */
@@ -731,7 +861,7 @@ function pick(cx,cy){
   ndc.set(cx/window.innerWidth*2-1,-(cy/window.innerHeight)*2+1);
   ray.setFromCamera(ndc,camera);ray.camera=camera;ray.far=walk?80:3000;
   var hits=ray.intersectObjects(scene.children,true),h=null,i;
-  for(i=0;i<hits.length;i++){if(hits[i].object!==marker&&visibleChain(hits[i].object)){h=hits[i];break;}}
+  for(i=0;i<hits.length;i++){if(hits[i].object!==marker&&!hits[i].object.isPoints&&hits[i].object!==moon&&visibleChain(hits[i].object)){h=hits[i];break;}}
   if(!h){hideInfo();return;}
   var key=findInfo(h.object);
   if(!key){var z=zoneAt(h.point);if(z<0||h.object===groundMesh){hideInfo();return;}key='stop:'+z;}
@@ -806,7 +936,7 @@ function walkStep(dt){
   var gy=groundAt(feet.x,feet.y+1.2,feet.z);
   if(gy!==null){if(gy<feet.y)feet.y=Math.max(gy,feet.y-20*dt);else feet.y+=(gy-feet.y)*Math.min(1,dt*14);}
   camera.position.set(feet.x,feet.y+EYE,feet.z);camera.rotation.set(pitch,yaw,0,'YXZ');
-  var z=zoneAt(feet);if(z!==curZone){curZone=z;$('zone').textContent=z>=0?STOPS[z].t:'尼山聖境';}
+  var z=zoneAt(feet);if(z!==curZone){curZone=z;markVisited(z);$('zone').textContent=z>=0?STOPS[z].t:'尼山聖境';}
 }
 
 /* =================== 觸控 / 滑鼠 / 鍵盤 =================== */
@@ -869,6 +999,7 @@ function plain(h){return h.replace(/<[^>]+>/g,'').replace(/※.*/,'');}
 function hideHint(){$('hint').style.opacity=0;}
 function go(i){
   exitWalk();hideInfo();
+  markVisited((i+STOPS.length)%STOPS.length);
   cur=(i+STOPS.length)%STOPS.length;var s=STOPS[cur];
   setCut(!!s.cut);flyTo(s.c,s.o,cur===0&&!started?10:2400);
   $('cNo').textContent=(cur+1)+' / '+STOPS.length;$('cTitle').textContent=s.t;$('cText').innerHTML=s.x;$('cText').scrollTop=0;
@@ -906,6 +1037,109 @@ function buildMenu(){
 $('menuList').addEventListener('click',function(e){var el=e.target;while(el&&!el.getAttribute('data-i'))el=el.parentNode;if(!el||!el.getAttribute)return;
   stopAuto();$('menu').style.display='none';go(parseInt(el.getAttribute('data-i'),10));});
 
+/* =================== 天命大道燈籠 =================== */
+var glowMats=[];
+(function(){
+  var lm=new THREE.MeshLambertMaterial({color:0xd8342a,emissive:0xff5030,emissiveIntensity:0.25});lm.userData.base=0.25;lm.userData.night=1.5;glowMats.push(lm);
+  var pm=M(0x3a2a1e),z,s;
+  for(z=90;z<=212;z+=14)for(s=-1;s<=1;s+=2){var y=avenueY(z);
+    TAG='avenue';cyl(0.15,0.2,3.6,6,pm,s*9.4,y+1.8,z);TAG=null;
+    var l=new THREE.Mesh(new THREE.SphereGeometry(0.55,12,10),lm);l.scale.set(1,1.25,1);l.position.set(s*9.4,y+4.0,z);tag(l,'avenue');scene.add(l);}
+  var GH=[0xffb040,0xffc060,0xffe9b0,0x2a7ab8,0xffcc66];scene.traverse(function(o){var m=o.material;if(o.isMesh&&m&&m.emissive&&GH.indexOf(m.emissive.getHex())>=0&&glowMats.indexOf(m)<0){m.userData.base=m.emissiveIntensity;m.userData.night=Math.max(1.3,m.emissiveIntensity*1.8);glowMats.push(m);}});
+})();
+
+/* =================== 日夜切換 =================== */
+var night=false;
+var starSky=(function(){
+  var t=ctex(1024,512,function(g,w,h){g.fillStyle='#000814';g.fillRect(0,0,w,h);for(var i=0;i<900;i++){var a=Math.random();g.fillStyle='rgba(255,255,240,'+(0.35+a*0.65)+')';var r=a>0.97?2.2:1.1;g.fillRect(Math.random()*w,Math.random()*h*0.55,r,r);}});
+  var m=new THREE.Mesh(new THREE.SphereGeometry(1600,32,16),new THREE.MeshBasicMaterial({map:t,side:THREE.BackSide,fog:false,depthWrite:false}));
+  m.visible=false;m.userData.noCollide=true;m.renderOrder=-1;scene.add(m);return m;})();
+var moon=(function(){var t=ctex(128,128,function(g){var gr=g.createRadialGradient(64,64,10,64,64,62);gr.addColorStop(0,'#fffbe8');gr.addColorStop(0.5,'#fff3c0');gr.addColorStop(0.56,'rgba(255,240,190,.35)');gr.addColorStop(1,'rgba(255,240,190,0)');g.fillStyle=gr;g.fillRect(0,0,128,128);});
+  var s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,fog:false,depthWrite:false}));s.scale.set(160,160,1);s.position.set(-500,700,-900);s.visible=false;scene.add(s);return s;})();
+function setNight(v){
+  night=v;
+  scene.background.setHex(v?0x0a1226:0xbfd3e0);scene.fog.color.setHex(v?0x0a1226:0xbfd3e0);
+  hemi.intensity=v?0.52:0.85;hemi.color.setHex(v?0x9aaad8:0xfff4e0);hemi.groundColor.setHex(v?0x2a2a3a:0x5a5040);
+  sun.intensity=v?0.22:0.75;sun.color.setHex(v?0xa8c0ff:0xffffff);sun2.intensity=v?0.06:0.25;
+  starSky.visible=v;moon.visible=v;
+  for(var i=0;i<glowMats.length;i++)glowMats[i].emissiveIntensity=v?glowMats[i].userData.night:glowMats[i].userData.base;
+  if(window._chandLight)window._chandLight.intensity=v?1.4:0.6;
+  $('bNight').textContent=v?'☀ 日':'☾ 夜';
+  try{localStorage.setItem('conlns_night',v?'1':'0');}catch(e){}
+}
+$('bNight').addEventListener('click',function(){setNight(!night);});
+
+/* =================== 杏花飄落 =================== */
+var petals=(function(){
+  var N=520,pos=new Float32Array(N*3),ph=new Float32Array(N),i;
+  for(i=0;i<N;i++){var z=82+Math.random()*133;pos[i*3]=(Math.random()*2-1)*82;pos[i*3+2]=z;pos[i*3+1]=avenueY(z)+Math.random()*14;ph[i]=Math.random()*6.28;}
+  var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  var t=ctex(64,64,function(c){c.fillStyle='#ffd6e0';c.beginPath();c.ellipse(32,32,26,15,0.6,0,7);c.fill();c.fillStyle='#ffeef3';c.beginPath();c.ellipse(28,28,10,5,0.6,0,7);c.fill();});
+  var p=new THREE.Points(g,new THREE.PointsMaterial({size:0.55,map:t,transparent:true,depthWrite:false,alphaTest:0.2}));
+  p.frustumCulled=false;scene.add(p);return {p:p,pos:pos,ph:ph,N:N};})();
+function petalTick(dt,tm){
+  var P=petals.pos,ph=petals.ph,i,k;
+  for(i=0;i<petals.N;i++){k=i*3;
+    P[k+1]-=(0.55+0.35*Math.sin(ph[i]))*dt;P[k]+=Math.sin(tm*0.0007+ph[i])*0.9*dt;P[k+2]+=(0.35+0.25*Math.cos(tm*0.0005+ph[i]))*dt;
+    if(P[k+1]<avenueY(P[k+2])+0.05||P[k+2]>216){var z=82+Math.random()*133;P[k+2]=z;P[k]=(Math.random()*2-1)*82;P[k+1]=avenueY(z)+10+Math.random()*6;}}
+  petals.p.geometry.attributes.position.needsUpdate=true;
+}
+
+/* =================== 小地圖 =================== */
+var visited={};
+try{var vs=JSON.parse(localStorage.getItem('conlns_visited')||'{}');if(vs)visited=vs;}catch(e){}
+function markVisited(i){if(i<0||visited[i])return;visited[i]=1;mapDirty=true;try{localStorage.setItem('conlns_visited',JSON.stringify(visited));}catch(e){}}
+var MX0=-92,MX1=236,MZ0=-245,MZ1=272,mapC=$('map'),mapG=mapC.getContext('2d'),MW=104,MH=Math.round(MW*(MZ1-MZ0)/(MX1-MX0)),mapDirty=true,mapT=0;
+var MS=MW/(MX1-MX0),DPR=Math.min(window.devicePixelRatio||1,2);
+mapC.style.width=MW+'px';mapC.style.height=MH+'px';mapC.width=MW*DPR;mapC.height=MH*DPR;
+function mpx(x){return (x-MX0)*MS;}function mpy(z){return (z-MZ0)*MS;}
+var ZCOL={1:'#b8322a',2:'#c9c2b0',3:'#e9a9b9',4:'#9a8a6a',5:'#8a7a50',7:'#d8c7a2',8:'#cdbb90',9:'#8a5034',11:'#c0392b',12:'#d9a83a',15:'#3f8a8a',16:'#f2f0ea',17:'#34508a'};
+var ZCH={1:'門',4:'像',7:'集',8:'道',9:'賢',11:'禮',12:'仁',15:'信',16:'義',17:'智'};
+function drawMap(mx,mz,dir){
+  var g=mapG,i,z;g.setTransform(DPR,0,0,DPR,0,0);g.clearRect(0,0,MW,MH);
+  g.fillStyle=night?'rgba(20,28,50,.85)':'rgba(60,80,50,.82)';g.fillRect(0,0,MW,MH);
+  g.strokeStyle='rgba(220,200,150,.6)';g.lineWidth=2.4;g.beginPath();g.moveTo(mpx(4),mpy(72));g.lineTo(mpx(X),mpy(72));g.stroke();
+  for(i=ZONES.length-1;i>=0;i--){z=ZONES[i];var s=z[0],on=!!visited[s];
+    g.globalAlpha=on?1:0.42;g.fillStyle=ZCOL[s]||'#888';g.fillRect(mpx(z[1]),mpy(z[3]),(z[2]-z[1])*MS,(z[4]-z[3])*MS);
+    if(on&&s>=7){g.globalAlpha=1;g.strokeStyle='#ffd97a';g.lineWidth=1;g.strokeRect(mpx(z[1])+0.5,mpy(z[3])+0.5,(z[2]-z[1])*MS-1,(z[4]-z[3])*MS-1);}}
+  g.globalAlpha=1;g.fillStyle='#5a3a1e';g.beginPath();g.arc(mpx(0),mpy(30),2.6,0,7);g.fill();
+  g.font='bold 9px '+FONT;g.textAlign='center';g.textBaseline='middle';
+  for(i=0;i<ZONES.length;i++){z=ZONES[i];var c=ZCH[z[0]];if(!c)continue;var cx=mpx((z[1]+z[2])/2),cy=mpy((z[3]+z[4])/2);if(z[0]===4)cy=mpy(30)-7;
+    g.fillStyle=(z[0]===16||z[0]===2||z[0]===7||z[0]===8)?'#3a2a1a':'#fff6dc';g.fillText(c,cx,cy);}
+  if(mx!==null){var px=mpx(mx),py=mpy(mz);
+    if(px>=-2&&px<=MW+2&&py>=-2&&py<=MH+2){g.save();g.translate(px,py);g.rotate(dir);
+      g.fillStyle='#ff4a3a';g.strokeStyle='#fff';g.lineWidth=1.2;g.beginPath();g.moveTo(0,-7);g.lineTo(4.5,4.5);g.lineTo(0,2);g.lineTo(-4.5,4.5);g.closePath();g.fill();g.stroke();g.restore();}}
+  var n=0;for(i in visited)if(visited[i]&&i>=1&&i<=17)n++;$('mapCnt').textContent=n+'/17';
+}
+var lastMk='';
+function mapTick(tm){
+  if(mapMin||tm-mapT<120)return;mapT=tm;
+  var x,z,d;
+  if(walk){x=feet.x;z=feet.z;d=-yaw;}
+  else{var cd=new THREE.Vector3();camera.getWorldDirection(cd);d=Math.atan2(cd.x,-cd.z);
+    if(camera.position.y-(zoneAt(camera.position)>=7?45:0)>60){x=target.x;z=target.z;}else{x=camera.position.x;z=camera.position.z;}}
+  var k=x.toFixed(1)+','+z.toFixed(1)+','+d.toFixed(2);if(k===lastMk&&!mapDirty)return;lastMk=k;mapDirty=false;drawMap(x,z,d);
+}
+var mapMin=false;
+try{mapMin=localStorage.getItem('conlns_mapmin')==='1';}catch(e){}
+function setMapMin(v){mapMin=v;mapC.style.display=v?'none':'block';$('bMapMin').textContent=v?'地圖':'－';mapDirty=true;try{localStorage.setItem('conlns_mapmin',v?'1':'0');}catch(e){}}
+$('bMapMin').addEventListener('click',function(){setMapMin(!mapMin);});
+function teleport(i){
+  var s=STOPS[i];if(!allSolids.length)buildSolids();
+  solids=[];for(var q=0;q<allSolids.length;q++)solids.push(allSolids[q].o);
+  var gy=groundAt(s.c.x,s.c.y,s.c.z);if(gy===null)return;
+  feet.set(s.c.x,gy,s.c.z);yaw=Math.atan2(-(s.o.x-s.c.x),-(s.o.z-s.c.z));pitch=0;refreshNear(true);curZone=-2;
+}
+function mapPick(e,cx,cy){
+  var r=mapC.getBoundingClientRect(),x=MX0+(cx-r.left)/MS,z=MZ0+(cy-r.top)/MS,zn=zoneAt({x:x,z:z});
+  if(zn<0)return;hideInfo();
+  if(walk){teleport(zn);markVisited(zn);}else{stopAuto();go(zn);}
+}
+mapC.addEventListener('touchend',function(e){e.preventDefault();var t=e.changedTouches[0];mapPick(e,t.clientX,t.clientY);},{passive:false});
+mapC.addEventListener('click',function(e){mapPick(e,e.clientX,e.clientY);});
+setMapMin(mapMin);
+try{if(localStorage.getItem('conlns_night')==='1')setNight(true);}catch(e){}
+
 /* =================== 迴圈 =================== */
 function resize(){var w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
 window.addEventListener('resize',resize);resize();
@@ -917,6 +1151,7 @@ function loop(now){
   requestAnimationFrame(loop);
   var dt=Math.min(0.05,lastT?(now-lastT)/1000:0.016);lastT=now;
   if(walk)walkStep(dt);
+  petalTick(dt,now);mapTick(now);
   if(marker.visible&&now-markerT>2500)marker.visible=false;
   if(tw){var k=Math.min(1,(now-tw.s)/tw.d),e=ease(k);camera.position.lerpVectors(tw.p0,tw.p1,e);target.lerpVectors(tw.t0,tw.t1,e);camera.lookAt(target);if(k>=1){tw=null;syncSph();}}
   if(window._chand)window._chand.rotation.y+=0.0015;
