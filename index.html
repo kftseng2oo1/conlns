@@ -91,7 +91,7 @@ var cutList=[];        /* 剖面模式要隱藏的屋頂與天花 */
 
 /* ---------- renderer ---------- */
 var canvas=document.getElementById('c');
-var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
+var renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true,logarithmicDepthBuffer:true});
 renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
 var scene=new THREE.Scene();
 scene.background=new THREE.Color(0xbfd3e0);
@@ -204,7 +204,7 @@ function wallZ(z1,z2,x,y0,h,m,door){
 }
 function room(o){
   var x1=o.cx-o.w/2,x2=o.cx+o.w/2,z1=o.cz-o.d/2,z2=o.cz+o.d/2,wm=M(o.wall);
-  if(o.floor!==null)box(o.w,0.4,o.d,M(o.floor||0x8a7a62),o.cx,o.y0-0.2,o.cz);
+  if(o.floor!==null)box(o.w-0.1,0.4,o.d-0.1,M(o.floor||0x8a7a62),o.cx,o.y0-0.17,o.cz);
   wallX(x1,x2,z1,o.y0,o.h,wm,o.n);wallX(x1,x2,z2,o.y0,o.h,wm,o.s);
   wallZ(z1,z2,x1,o.y0,o.h,wm,o.w_);wallZ(z1,z2,x2,o.y0,o.h,wm,o.e);
   if(o.ceil!==null){var cc=o.ceil||0x6a4a30,c=box(o.w,0.4,o.d,M(cc,{emissive:cc,emissiveIntensity:0.45}),o.cx,o.y0+o.h+0.2,o.cz);cutList.push(c);}
@@ -227,7 +227,7 @@ function avenueY(z){if(z>=Z0)return 0;if(z<=80)return 30;var i=Math.floor((Z0-z)
   for(i=0;i<NSTEP;i++){
     top=(i+1)*RISE;zc=Z0-(i+0.5)*RUN;
     d.position.set(0,top/2,zc);d.scale.set(170,top,RUN);d.updateMatrix();gm.setMatrixAt(i,d.matrix);
-    d.position.set(0,top/2+0.06,zc);d.scale.set(16,top,RUN);d.updateMatrix();sm.setMatrixAt(i,d.matrix);
+    d.position.set(0,top/2+0.06,zc);d.scale.set(16,top,RUN+0.05);d.updateMatrix();sm.setMatrixAt(i,d.matrix);
   }
   tag(gm,'avenue');tag(sm,'avenue');scene.add(gm);scene.add(sm);
 })();
@@ -236,7 +236,7 @@ box(340,30,340,M(0x8fa06c),80,15,-90);
 box(70,0.3,90,M(0xc8c2b2),0,30.15,40);         /* 銅像廣場 */
 box(X-6,0.3,10,M(0xc8c2b2),(X+6)/2,30.15,72);   /* 往大學堂步道 */
 box(50,0.3,26,M(0xc8c2b2),X,30.15,74);          /* 大學堂前庭 */
-box(124,15,228,M(0xd2c8b0),X,37.5,-132);         /* 大學堂後段基座 */
+box(124,14.7,228,M(0xd2c8b0),X,37.35,-132);         /* 大學堂後段基座 */
 
 /* 宮殿式大門 */
 (function(){
@@ -394,7 +394,7 @@ room({cx:X,cz:-72.5,w:26,d:105,y0:45,h:16,wall:0x5e3424,floor:0x7a5a3c,ceil:0x3a
 
 /* 4. 禮廳  z -125→-155 */
 loadMsg.textContent='佈置五常殿堂…';
-room({cx:X,cz:-140,w:30,d:30,y0:45,h:15,wall:0x9a2a1e,floor:0x6a2a1e,ceil:0x5a1a12,roof:0xa03a28,s:{w:7,h:9},n:{w:8,h:10}});
+room({cx:X,cz:-140.3,w:30,d:29.4,y0:45,h:15,wall:0x9a2a1e,floor:0x6a2a1e,ceil:0x5a1a12,roof:0xa03a28,s:{w:7,h:9},n:'open'});
 (function(){
   var i,rm=[M(0xc0392b,{side:THREE.DoubleSide}),M(0xd9a83a,{side:THREE.DoubleSide,emissive:0x2a1a00})];
   for(i=0;i<5;i++){var r=12-i*2.2,c=new THREE.Mesh(new THREE.CylinderGeometry(r,r,0.9,8,1,true),rm[i%2]);c.position.set(X,55.6+i*0.9,-140);c.rotation.y=Math.PI/8;tag(c,'liCaisson');scene.add(c);}
@@ -463,7 +463,7 @@ tag(emblem('禮','火・朱雀','#a8231a','#ffd77a',X,57.5,-154.6,0,2.8),'stop:1
 
 /* 6. 信廳（杏亭） 東・木・青龍 */
 var XE=X+26.5+15;
-room({cx:XE,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0x2a5566,floor:0x3a4a4a,ceil:0x1a2a3a,roof:0x3a6a7a,w_:{w:8,h:10}});
+room({cx:XE,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0x2a5566,floor:0x3a4a4a,ceil:0x1a2a3a,roof:0x3a6a7a,w_:'open'});
 (function(){
   var i,wm=M(0x8a5a32),s;TAG='xinCaisson';
   for(i=0;i<11;i++){s=24-i*1.9;var y=55.6+i*0.4;
@@ -489,7 +489,7 @@ room({cx:XE,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0x2a5566,floor:0x3a4a4a,ceil:0x1
 
 /* 7. 義廳 西・金・白虎 */
 var XW=X-26.5-15;
-room({cx:XW,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0xf1eee6,floor:0xdcd8cc,ceil:0xe8e4da,roof:0xb8b8b0,e:{w:8,h:10}});
+room({cx:XW,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0xf1eee6,floor:0xdcd8cc,ceil:0xe8e4da,roof:0xb8b8b0,e:'open'});
 (function(){
   var i,a,wm=M(0xfbfaf6);TAG='yiColumns';
   for(i=0;i<12;i++){a=i/12*Math.PI*2;cyl(0.7,0.8,12,14,wm,XW+Math.cos(a)*9,51,-181.5+Math.sin(a)*9);box(2,0.6,2,M(0xd9c58a),XW+Math.cos(a)*9,57.2,-181.5+Math.sin(a)*9);}
@@ -507,7 +507,7 @@ room({cx:XW,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0xf1eee6,floor:0xdcd8cc,ceil:0xe
 
 /* 8. 智廳 北・水・玄武 */
 var ZN=-208-15;
-room({cx:X,cz:ZN,w:30,d:30,y0:45,h:7,wall:0x1f2a44,floor:0x1a2236,ceil:null,s:{w:8,h:6.6}});
+room({cx:X,cz:ZN,w:30,d:30,y0:45,h:7,wall:0x1f2a44,floor:0x1a2236,ceil:null,s:'open'});
 (function(){
   var st=ctex(1024,512,function(g,w,h){var gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#0c1d4a');gr.addColorStop(1,'#3a5a9a');g.fillStyle=gr;g.fillRect(0,0,w,h);
     var i;for(i=0;i<700;i++){g.fillStyle='rgba(255,255,'+(200+Math.floor(Math.random()*55))+','+(0.4+Math.random()*0.6)+')';g.fillRect(Math.random()*w,Math.random()*h*0.9,Math.random()*3.5+1.5,Math.random()*3.5+1.5);}});
@@ -528,7 +528,7 @@ room({cx:X,cz:ZN,w:30,d:30,y0:45,h:7,wall:0x1f2a44,floor:0x1a2236,ceil:null,s:{w
     for(i=0;i<4;i++){g.beginPath();g.ellipse(cx+(i%2?200:-200),cy+(i<2?-150:150),50,35,0,0,7);g.fill();}
     g.strokeStyle='#3a5a4a';g.lineWidth=26;g.beginPath();g.moveTo(cx,cy+230);g.bezierCurveTo(cx+260,cy+360,cx+340,cy-100,cx+200,cy-260);g.bezierCurveTo(cx+120,cy-360,cx-60,cy-340,cx-40,cy-230);g.stroke();
     g.fillStyle='#1f2a44';g.font='bold 70px '+FONT;g.textAlign='center';g.fillText('玄 武',cx,cy+430);});
-  var fl=new THREE.Mesh(new THREE.CircleGeometry(13,64),new THREE.MeshLambertMaterial({map:ft}));fl.rotation.x=-Math.PI/2;fl.position.set(X,45.05,ZN);tag(fl,'zhiFloor');scene.add(fl);
+  var fl=new THREE.Mesh(new THREE.CircleGeometry(13,64),new THREE.MeshLambertMaterial({map:ft}));fl.rotation.x=-Math.PI/2;fl.position.set(X,45.1,ZN);tag(fl,'zhiFloor');scene.add(fl);
   /* 孔子問禮於老子 */
   TAG='zhiStatue';box(9,1,4,M(0x8a8a8a),X,45.5,ZN-4);
   var kz=figure(3.2,0x6a5a3a,{beard:true});kz.position.set(X-2.2,46,ZN-4);kz.rotation.y=Math.PI/2;kz.rotation.x=0.12;tag(kz,'zhiStatue');scene.add(kz);
