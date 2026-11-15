@@ -8,7 +8,7 @@
 | `confucius.glb` | 72 公尺孔子銅像 | 1 |
 | `dragon.glb` | 信廳 青龍 | 1 |
 | `tiger.glb` | 義廳 白虎 | 1 |
-| `xuanwu.glb` | 智廳 玄武 | 1 |
+| `xuanwu.glb` | 智廳 玄武（**已內附**，可互動） | 1 |
 | `zhuque.glb` | 禮廳 朱雀 | 1 |
 | `qilin.glb` | 集賢廳＋仁廳 麒麟 | 4（自動複製） |
 | `sage.glb` | 七十二賢廊 賢人 | 72（自動複製，建議 5,000 面以下） |
@@ -30,5 +30,7 @@
 - `rotY`：轉向角度（度）；`scale`：相對原雕塑高度的倍率；`tint`：統一改色（例如鎏金、青銅）；`animate`：播放模型內建動畫。
 - `credits` 會顯示在 App「目錄 → 關於 → 模型來源」。CC BY 授權的模型務必填寫作者與網址。
 - 請使用未經 Draco／meshopt 壓縮的 `.glb`。
+
+`xuanwu.glb`（玄武）為本專案原創程式生成模型，內含 `Idle`、`Walk`、`Retract`、`SnakeRear`、`Blink`、`Awaken` 六段動畫；載入後可點擊互動：點龜殼鳴鐘發光、點龜頭縮頸、點靈蛇昂首吐信、點腳踏步，連點五下喚醒神獸。若在 `models.json` 給它設 `tint`，則改為一般靜態雕塑。
 
 `bird-parrot.glb`（青鳥）與 `bird-stork.glb`（鶴群）取自 three.js 範例模型（原作 mirada.com，ro.me 專案），隨 three.js 以 MIT 授權發布。
