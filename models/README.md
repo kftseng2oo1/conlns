@@ -1,0 +1,34 @@
+# 模型插槽（models/）
+
+把 `.glb` 檔放進這個資料夾、用下列檔名，App 會自動以它取代程式繪製的雕塑；沒有檔案時沿用原本的版本。
+模型會自動縮放成與原雕塑同高、底部貼地、置中於原位置。
+
+| 檔名 | 取代對象 | 數量 |
+| --- | --- | --- |
+| `confucius.glb` | 72 公尺孔子銅像 | 1 |
+| `dragon.glb` | 信廳 青龍 | 1 |
+| `tiger.glb` | 義廳 白虎 | 1 |
+| `xuanwu.glb` | 智廳 玄武 | 1 |
+| `zhuque.glb` | 禮廳 朱雀 | 1 |
+| `qilin.glb` | 集賢廳＋仁廳 麒麟 | 4（自動複製） |
+| `sage.glb` | 七十二賢廊 賢人 | 72（自動複製，建議 5,000 面以下） |
+
+## 選用設定 `models.json`
+
+```json
+{
+  "slots": {
+    "dragon": { "rotY": 90, "scale": 1.0, "tint": "#3a8a7a", "animate": true, "speed": 0.5 },
+    "tiger":  { "file": "white-tiger.glb", "rotY": 180 }
+  },
+  "credits": [
+    { "file": "dragon.glb", "title": "Chinese Dragon", "author": "作者名", "license": "CC BY 4.0", "url": "https://..." }
+  ]
+}
+```
+
+- `rotY`：轉向角度（度）；`scale`：相對原雕塑高度的倍率；`tint`：統一改色（例如鎏金、青銅）；`animate`：播放模型內建動畫。
+- `credits` 會顯示在 App「目錄 → 關於 → 模型來源」。CC BY 授權的模型務必填寫作者與網址。
+- 請使用未經 Draco／meshopt 壓縮的 `.glb`。
+
+`bird-parrot.glb`（青鳥）與 `bird-stork.glb`（鶴群）取自 three.js 範例模型（原作 mirada.com，ro.me 專案），隨 three.js 以 MIT 授權發布。
