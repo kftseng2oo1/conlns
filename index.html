@@ -5646,7 +5646,7 @@ function beastsTick(dt){
     b.light.intensity=b.g*1.5;}
   bsRingTick(dt);bsSparkTick(dt);
 }
-/* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角） --- */
+/* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商） --- */
 var bsAC=null;
 function bsAudio(){if(!bsAC){try{bsAC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(bsAC&&bsAC.state==='suspended')bsAC.resume();return bsAC;}
 function bsTone(f,dur,vol,type,delay,glide){var a=bsAudio();if(!a)return;var t0=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();
@@ -5696,6 +5696,18 @@ var BEAST_DEFS={
       leg:function(b){beastPlay(b,'Walk',THREE.LoopRepeat,1);}},
     awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[440,523,659,880,1047].forEach(function(f,i){bsTone(f,2.4,0.07,'sine',i*0.12);});bsGong(YU);
       for(var k=0;k<6;k++)bsRing(b,k%2?0xe6c97a:0x6fe3d6,k*220);}},
+  /* 義廳 白虎：點頭虎嘯、點前爪揮爪、點尾巴甩尾、點身體起身、點山岩台座金石鳴；連點五下喚醒白虎、繞殿奔馳 */
+  tiger:{glow:/^(fur|fur_leg|fur_head|armor|stars|star_lines|wisp|tiger_eye)$/,glowColor:0x9fc8ff,dflt:'body',
+    part:function(n){if(/^(Head$|Neck$|Jaw$)/.test(n))return 'head';if(/^Leg_F/.test(n))return 'paw';if(/^Tail_/.test(n))return 'tail';if(n==='Altar')return 'altar';if(/^(Hips$|Spine$|Chest$|Leg_B)/.test(n))return 'body';return null;},
+    tap:{
+      head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.2);bsNoise(1.5,0.6,'lowpass',260,1.4);bsTone(73,1.5,0.22,'sawtooth',0,147);bsTone(147,1.2,0.08,'triangle',0.05,220);bsRing(b,0xbfd8ff,0);bsRing(b,0xf2d48a,200);}},
+      paw:function(b){if(beastPlay(b,'Swipe')){for(var k=0;k<3;k++)bsNoise(0.18,0.5,'highpass',2500,0.8,0.5+k*0.07);bsTone(1175,0.4,0.05,'triangle',0.55,587);setTimeout(function(){bsBurst(b,30,1.0,0.6,0.3,0.8);},520);}},
+      tail:function(b){if(beastPlay(b,'TailLash'))bsNoise(0.12,0.7,'bandpass',1800,1.5,0.25);},
+      body:function(b){if(beastPlay(b,'Stand')){b.g=Math.max(b.g,2);bsTone(587,1.2,0.05);bsTone(880,1.4,0.04,'sine',0.2);}},
+      altar:function(b){b.g=Math.max(b.g,2.2);var f=294;bsTone(f,3,0.25);bsTone(f*2.76,2,0.08);bsTone(f*5.4,1.2,0.04);bsTone(f*1.5,2.4,0.06);bsRing(b,0xf2d48a,0);bsRing(b,0xbfd8ff,250);bsBurst(b,50,0.4,0.7,0.8,0.5);}},
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[147,220,294,330,440,587].forEach(function(f,i){bsTone(f,3,0.07,i%2?'triangle':'sine',i*0.12);});bsNoise(1.5,0.6,'lowpass',260,1.4);
+      for(var k=0;k<6;k++)bsRing(b,k%2?0xf2d48a:0xbfd8ff,k*220);
+      b.next=function(){beastPlay(b,'Run',THREE.LoopOnce,1,true);};}},
   /* 信廳 青龍：點龍頭長吟、點龍身游動、點龍爪龍珠旋光、點祥雲台雲湧；連點五下喚醒神龍、騰雲繞殿 */
   dragon:{glow:/^(scales|belly|wisp|pearl|cloud|dragon_eye)$/,glowColor:0x5ff0d8,dflt:'body',
     part:function(n){if(/^(Head$|Jaw$|Mane$|Whiskers$)/.test(n))return 'head';if(/^(Pearl$|Leg_FR)/.test(n))return 'pearl';if(/^(Altar$|Cloud_)/.test(n))return 'cloud';if(/^(Body_|Leg_|TailFin$)/.test(n))return 'body';return null;},
