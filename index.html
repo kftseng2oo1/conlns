@@ -5708,19 +5708,103 @@ room({cx:X,cz:-140.3,w:30,d:29.4,y0:45,h:15,wall:0x9a2a1e,floor:0x6a2a1e,ceil:0x
   TAG=null;
 })();
 
+
+/* 四書五經 */
+var CLASSICS=[];
+function mergeGeos(list){var pos=[],nor=[],i,j;for(i=0;i<list.length;i++){var g=list[i].index?list[i].toNonIndexed():list[i],P=g.attributes.position,N=g.attributes.normal;for(j=0;j<P.count;j++){pos.push(P.getX(j),P.getY(j),P.getZ(j));nor.push(N.getX(j),N.getY(j),N.getZ(j));}}
+  var o=new THREE.BufferGeometry();o.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));o.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));return o;}
+function classicSeal(g,w,C){var c=w/2,T2=Math.PI*2,k;
+  var gr=g.createRadialGradient(c,c,20,c,c,c);gr.addColorStop(0,'#fbf2d8');gr.addColorStop(0.75,'#efd9a0');gr.addColorStop(1,'#c8963a');g.fillStyle=gr;g.fillRect(0,0,w,w);
+  g.strokeStyle=C.c[0];g.lineWidth=10;g.beginPath();g.arc(c,c,c-14,0,T2);g.stroke();g.lineWidth=3;g.beginPath();g.arc(c,c,c-34,0,T2);g.stroke();
+  g.textAlign='center';g.textBaseline='middle';
+  function ring(chars,r,size,col){g.fillStyle=col;g.font='bold '+size+'px '+FONT;for(var i=0;i<chars.length;i++){var a=-Math.PI/2+i/chars.length*T2;g.save();g.translate(c+Math.cos(a)*r,c+Math.sin(a)*r);g.rotate(a+Math.PI/2);g.fillText(chars[i],0,0);g.restore();}}
+  function big(t,size,col,y){g.fillStyle=col;g.font='bold '+size+'px '+FONT;g.fillText(t,c,y||c);}
+  if(C.n==='易經'){ /* 先天八卦＋太極 */
+    var TRI=[[1,1,1],[0,1,1],[1,0,1],[0,0,1],[1,1,0],[0,1,0],[1,0,0],[0,0,0]],ORD=[0,1,2,3,7,6,5,4];   /* 乾兌離震 坤艮坎巽 */
+    for(k=0;k<8;k++){var a=-Math.PI/2+k/8*T2,tr=TRI[[0,4,3,7,6,2,1,5][k]];g.save();g.translate(c+Math.cos(a)*170,c+Math.sin(a)*170);g.rotate(a+Math.PI/2);g.fillStyle='#1a1a1a';
+      for(var l=0;l<3;l++){var yy=-24+l*20;if(tr[2-l])g.fillRect(-36,yy,72,12);else{g.fillRect(-36,yy,30,12);g.fillRect(6,yy,30,12);}}g.restore();}
+    g.fillStyle='#f6f0e0';g.beginPath();g.arc(c,c,100,0,T2);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(c,c,100,-Math.PI/2,Math.PI/2);g.arc(c,c+50,50,Math.PI/2,-Math.PI/2,true);g.arc(c,c-50,50,Math.PI/2,-Math.PI/2);g.fill();
+    g.fillStyle='#f6f0e0';g.beginPath();g.arc(c,c+50,14,0,T2);g.fill();g.fillStyle='#1a1a1a';g.beginPath();g.arc(c,c-50,14,0,T2);g.fill();g.strokeStyle='#1a1a1a';g.lineWidth=3;g.beginPath();g.arc(c,c,100,0,T2);g.stroke();return;}
+  if(C.n==='論語'){for(k=0;k<10;k++){var aa=k/10*T2,x=c+Math.cos(aa)*170,y=c+Math.sin(aa)*170;for(var p=0;p<5;p++){var b=p/5*T2;g.fillStyle=p%2?'#f2c0c8':'#fbe2e6';g.beginPath();g.arc(x+Math.cos(b)*9,y+Math.sin(b)*9,9,0,T2);g.fill();}g.fillStyle='#c83a2a';g.beginPath();g.arc(x,y,4,0,T2);g.fill();}
+    big('仁',230,C.c[0]);return;}
+  if(C.n==='孟子'){g.strokeStyle='rgba(58,90,138,.55)';g.lineWidth=6;for(k=0;k<5;k++){g.beginPath();for(var t=0;t<1;t+=0.02){var xx=c-150+t*300,yy=c+150-t*300+Math.sin(t*12+k)*18+k*14-28;if(t===0)g.moveTo(xx,yy);else g.lineTo(xx,yy);}g.stroke();}
+    big('義',220,C.c[0]);g.fillStyle=C.c[0];g.font='bold 34px '+FONT;g.fillText('浩然之氣',c,c+170);return;}
+  if(C.n==='大學'){ring('格物致知誠意正心修身齊家治國平天下'.split(''),180,30,C.c[0]);big('明德',130,C.c[2]);return;}
+  if(C.n==='中庸'){g.strokeStyle=C.c[2];g.lineWidth=10;g.beginPath();g.moveTo(c,c-150);g.lineTo(c,c+130);g.moveTo(c-150,c-110);g.lineTo(c+150,c-110);g.stroke();
+    for(k=-1;k<=1;k+=2){g.lineWidth=4;g.beginPath();g.moveTo(c+k*140,c-110);g.lineTo(c+k*170,c-20);g.moveTo(c+k*140,c-110);g.lineTo(c+k*110,c-20);g.stroke();g.fillStyle=C.c[1];g.beginPath();g.ellipse(c+k*140,c-16,40,10,0,0,T2);g.fill();}
+    g.fillRect(c-60,c+130,120,16);big('中',200,C.c[0],c+40);return;}
+  if(C.n==='詩經'){g.strokeStyle='#6a8a4a';g.lineWidth=4;for(k=0;k<9;k++){var rx=c-170+k*42;g.beginPath();g.moveTo(rx,c+190);g.quadraticCurveTo(rx+10,c+80,rx+((k%2)?20:-10),c+40);g.stroke();}
+    for(k=-1;k<=1;k+=2){g.fillStyle='#5a4a3a';g.beginPath();g.ellipse(c+k*70,c+60,44,20,k*0.2,0,T2);g.fill();g.beginPath();g.arc(c+k*30,c+40,14,0,T2);g.fill();g.fillStyle='#f2efe6';g.beginPath();g.ellipse(c+k*74,c+66,26,10,k*0.2,0,T2);g.fill();}
+    ring(['風','雅','頌'],180,40,C.c[2]);big('詩',190,C.c[2],c-50);return;}
+  if(C.n==='尚書'){g.fillStyle=C.c[0];g.beginPath();g.moveTo(c-110,c-30);g.lineTo(c+110,c-30);g.quadraticCurveTo(c+120,c+90,c+60,c+100);g.lineTo(c-60,c+100);g.quadraticCurveTo(c-120,c+90,c-110,c-30);g.fill();
+    g.fillRect(c-90,c-70,20,44);g.fillRect(c+70,c-70,20,44);for(k=-1;k<=1;k++){g.fillRect(c+k*60-8,c+96,16,70);}
+    g.strokeStyle='#e0c070';g.lineWidth=4;for(k=0;k<6;k++){g.beginPath();g.arc(c-80+k*32,c+20,10,0,T2);g.stroke();}big('書',120,'#3a2414',c-150);return;}
+  if(C.n==='禮記'){g.fillStyle=C.c[1];g.beginPath();g.moveTo(c-90,c-40);g.lineTo(c+110,c-60);g.quadraticCurveTo(c+60,c+40,c+30,c+60);g.lineTo(c-30,c+60);g.quadraticCurveTo(c-60,c+40,c-90,c-40);g.fill();
+    g.fillRect(c-6,c+60,12,40);for(k=-1;k<=1;k++){g.save();g.translate(c+k*40,c+100);g.rotate(k*0.25);g.fillRect(-5,0,10,70);g.restore();}g.fillRect(c-40,c-90,8,40);g.fillRect(c+30,c-95,8,44);
+    g.fillStyle=C.c[2];for(k=0;k<6;k++)g.fillRect(c-60+k*24,c-10,10,10);big('禮',110,C.c[0],c-160);return;}
+  if(C.n==='春秋'){for(k=0;k<14;k++){var a2=k/14*T2,x2=c+Math.cos(a2)*175,y2=c+Math.sin(a2)*175,sp=Math.sin(a2)<0;
+      if(sp){g.fillStyle=k%2?'#f2b8c6':'#fbe0e6';for(var q=0;q<5;q++){var bq=q/5*T2;g.beginPath();g.arc(x2+Math.cos(bq)*8,y2+Math.sin(bq)*8,8,0,T2);g.fill();}}
+      else{g.fillStyle=k%2?'#c8501e':'#e09a2a';g.beginPath();g.moveTo(x2,y2-18);g.quadraticCurveTo(x2+18,y2,x2,y2+18);g.quadraticCurveTo(x2-18,y2,x2,y2-18);g.fill();}}
+    g.fillStyle=C.c[3];g.font='bold 130px '+FONT;g.fillText('春',c,c-62);g.fillStyle=C.c[0];g.fillText('秋',c,c+72);return;}
+}
+function findClassic(o){while(o&&o!==scene){if(o.userData&&o.userData.classic)return o.userData.classic;o=o.parent;}return null;}
+function classicsTick(dt,tm){var _c=new THREE.Color(),gold=new THREE.Color(0xffd870);for(var i=0;i<CLASSICS.length;i++){var r=CLASSICS[i];if(r.spin)r.med.rotation.z-=dt*0.15;
+  if(r.glow>0){r.glow=Math.max(0,r.glow-dt*0.5);var n=r.cols.length;for(var k=0;k<n;k++){var w=Math.max(0,Math.sin(Math.min(Math.PI,(1-r.glow)*6-k/n*3))) ;_c.copy(r.cols[k]).lerp(gold,0.65*w*r.glow*1.4);r.im.setColorAt(k,_c);}r.im.instanceColor.needsUpdate=true;
+    r.med.material.emissiveIntensity=0.3+r.glow*0.7;r.plq.material.emissiveIntensity=0.25+r.glow*0.6;}}}
+
 /* 5. 仁廳  z -155→-208  53×53  h27 */
 room({cx:X,cz:-181.5,w:53,d:53,y0:45,h:27,wall:0xc49a40,floor:0xb8963e,ceil:0x8a6a2a,roof:0xd6a630,roofH:22,dbl:true,s:{w:8,h:10},n:{w:8,h:10},e:{w:8,h:10},w_:{w:8,h:10}});
 (function(){
-  /* 通天書架 */
-  var bt=ctex(256,256,function(g,w,h){g.fillStyle='#4a2a16';g.fillRect(0,0,w,h);var i,j,c=['#b8322a','#2a6a5a','#d9a83a','#3a4a7a','#7a3a5a','#c87a2a','#4a7a3a'];
-    for(i=0;i<4;i++)for(j=0;j<4;j++){g.fillStyle='#6a3a1e';g.fillRect(i*64+3,j*64+3,58,58);g.fillStyle=c[(i*3+j*5)%7];g.fillRect(i*64+9,j*64+9,46,46);
-      g.fillStyle='rgba(255,230,160,.6)';g.fillRect(i*64+14,j*64+20,36,4);g.fillRect(i*64+14,j*64+40,36,4);}});
-  bt.wrapS=bt.wrapT=THREE.RepeatWrapping;
-  var s,k;
-  for(s=-1;s<=1;s+=2)for(k=-1;k<=1;k+=2){
-    var tt=bt.clone();tt.needsUpdate=true;tt.repeat.set(22/1.8,22/1.8);
-    tag(plane(22,22,tt,X+s*26.1,45+12,-181.5+k*(4+11),-s*Math.PI/2,0.05),'shelf');
-  }
+  /* 通天書架：四書五經九區。西牆四書（線裝書）、東牆五經（竹簡卷）；每區有匾額、色系、主題圓章（易經八卦會轉），點任一區看介紹並亮起 */
+  var CL=[
+    {k:'cl_lunyu',n:'論語',g:'四書',sub:'孔門弟子記言・二十篇',c:['#a8322a','#c8502e','#8a2420','#d8a040'],ch:'仁',form:'book'},
+    {k:'cl_mengzi',n:'孟子',g:'四書',sub:'孟子與弟子著・七篇',c:['#2a3a6a','#3a5a8a','#1e2a4a','#c8a050'],ch:'義',form:'book'},
+    {k:'cl_daxue',n:'大學',g:'四書',sub:'三綱領・八條目',c:['#2a6a4a','#3a8a5a','#1e4a34','#d8b860'],ch:'德',form:'book'},
+    {k:'cl_zhongyong',n:'中庸',g:'四書',sub:'致中和・誠者天之道',c:['#b8862a','#d8a83a','#8a6420','#f0d080'],ch:'中',form:'book'},
+    {k:'cl_shi',n:'詩經',g:'五經',sub:'風・雅・頌・三百零五篇',c:['#d88a9a','#e8a8b0','#b86a7a','#f2d8a8'],ch:'詩',form:'slip'},
+    {k:'cl_shu',n:'尚書',g:'五經',sub:'上古政事・典謨訓誥',c:['#7a5a34','#9a7444','#5a4026','#c8a060'],ch:'書',form:'slip'},
+    {k:'cl_li',n:'禮記',g:'五經',sub:'禮儀制度・四十九篇',c:['#9a1e1a','#2a1a14','#c8301e','#d8a040'],ch:'禮',form:'slip'},
+    {k:'cl_yi',n:'易經',g:'五經',sub:'六十四卦・三百八十四爻',c:['#1a1a1a','#e8e2d0','#3a3a3a','#c8a050'],ch:'易',form:'slip'},
+    {k:'cl_chunqiu',n:'春秋',g:'五經',sub:'魯國編年・一字褒貶',c:['#c86a1e','#d8962a','#6a8a3a','#a83a1e'],ch:'春秋',form:'slip'}];
+  var s,k,PANELS=[{s:-1,z:-166.5,cl:[0,1]},{s:-1,z:-196.5,cl:[2,3]},{s:1,z:-196.5,cl:[4,5]},{s:1,z:-166.5,cl:[6,7,8]}];
+  var lattice=ctex(128,128,function(g,w,h){g.fillStyle='#5a3218';g.fillRect(0,0,w,h);g.fillStyle='#1e1008';g.fillRect(8,8,w-16,h-16);g.fillStyle='rgba(230,180,90,.35)';g.fillRect(0,0,w,3);g.fillRect(0,0,3,h);});
+  lattice.wrapS=lattice.wrapT=THREE.RepeatWrapping;
+  var CELL=0.92,PW=22,PH=22,bookGeo=(function(){var gs=[],i;for(i=0;i<3;i++){var b=new THREE.BoxGeometry(0.66,0.13,0.5);b.translate((i-1)*0.02,-0.2+i*0.14,0);gs.push(b);}
+      var b2=new THREE.BoxGeometry(0.12,0.5,0.46);b2.translate(0.24,0.05,0.01);gs.push(b2);return mergeGeos(gs);})(),
+    slipGeo=(function(){var gs=[],i;for(i=0;i<3;i++){var c=new THREE.CylinderGeometry(0.13,0.13,0.62,7);c.rotateZ(Math.PI/2);c.translate(0,-0.18+i*0.1,i===1?-0.04:0.04);if(i===2)c.translate(0,0.08,0);gs.push(c);}
+      var tie=new THREE.CylinderGeometry(0.14,0.14,0.04,7);tie.rotateZ(Math.PI/2);tie.translate(0.18,-0.18,0.04);gs.push(tie);return mergeGeos(gs);})();
+  var cMat=new THREE.MeshLambertMaterial({color:0xffffff});
+  CLASSICS=[];
+  PANELS.forEach(function(P){
+    var grp=new THREE.Group();grp.position.set(X+P.s*25.72,45,P.z);grp.rotation.y=-P.s*Math.PI/2;scene.add(grp);
+    var lt=lattice.clone();lt.needsUpdate=true;lt.repeat.set(PW/CELL,(PH-3.4)/CELL);
+    var back=new THREE.Mesh(new THREE.PlaneGeometry(PW,PH-3.4),new THREE.MeshLambertMaterial({map:lt}));back.position.set(0,1+(PH-3.4)/2,-0.3);grp.add(back);tag(back,'shelf');
+    var base=new THREE.Mesh(new THREE.BoxGeometry(PW+0.4,1,0.9),M(0x6a2418));base.position.set(0,0.5,0);grp.add(base);tag(base,'shelf');
+    var cap=new THREE.Mesh(new THREE.BoxGeometry(PW+0.6,0.5,1.1),M(0xd9a83a,{emissive:0x2a1a00}));cap.position.set(0,PH,0);grp.add(cap);tag(cap,'shelf');
+    var n=P.cl.length,SW=PW/n;
+    P.cl.forEach(function(ci,si){var C=CL[ci],u0=-PW/2+si*SW,uc=u0+SW/2,i,j;
+      if(si){var sep=new THREE.Mesh(new THREE.BoxGeometry(0.3,PH-1,1.0),M(0xb8862a,{emissive:0x1a1000}));sep.position.set(u0,PH/2+0.25,0.05);grp.add(sep);}
+      /* 匾額 */
+      var pt=ctex(1024,220,function(g,w,h){g.fillStyle='#5a120e';g.fillRect(0,0,w,h);g.strokeStyle='#e0b050';g.lineWidth=10;g.strokeRect(10,10,w-20,h-20);g.lineWidth=3;g.strokeRect(26,26,w-52,h-52);
+        g.fillStyle='#f6d47a';g.textAlign='center';g.textBaseline='middle';g.font='bold 100px '+FONT;g.fillText('《'+C.n+'》',w/2,h*0.42);
+        g.font='34px '+FONT;g.fillStyle='#f0dca0';g.fillText(C.g+'・'+C.sub,w/2,h*0.8);});
+      var pw=Math.min(SW-0.6,8.4),plq=new THREE.Mesh(new THREE.PlaneGeometry(pw,pw*220/1024),new THREE.MeshLambertMaterial({map:pt,emissive:0xffffff,emissiveMap:pt,emissiveIntensity:0.25}));
+      plq.position.set(uc,PH-1.55,0.3);grp.add(plq);tag(plq,C.k);
+      /* 主題圓章 */
+      var mt=ctex(512,512,function(g,w,h){classicSeal(g,w,C);});
+      var med=new THREE.Mesh(new THREE.CircleGeometry(1.7,40),new THREE.MeshLambertMaterial({map:mt,emissive:0xffffff,emissiveMap:mt,emissiveIntensity:0.3}));
+      var my=6.2;med.position.set(uc,my,0.25);grp.add(med);tag(med,C.k);
+      var rim=new THREE.Mesh(new THREE.TorusGeometry(1.8,0.12,8,48),M(0xd9a83a,{emissive:0x3a2600}));rim.position.set(uc,my,0.25);grp.add(rim);tag(rim,C.k);
+      /* 書格：避開圓章與匾額 */
+      var cells=[];for(i=0;i*CELL<SW-0.5;i++)for(j=0;(1.2+j*CELL)<PH-3.0;j++){var x=u0+0.3+CELL/2+i*CELL,y=1.2+CELL/2+j*CELL;if(x>u0+SW-0.3)continue;var dx=x-uc,dy=y-my;if(dx*dx+dy*dy<2.35*2.35)continue;cells.push([x,y]);}
+      var im=new THREE.InstancedMesh(C.form==='book'?bookGeo:slipGeo,cMat,cells.length),d=new THREE.Object3D(),col=new THREE.Color(),cols=[];
+      for(i=0;i<cells.length;i++){d.position.set(cells[i][0],cells[i][1],0);d.rotation.set(0,(Math.random()-0.5)*0.12,C.form==='book'?0:(Math.random()-0.5)*0.08);d.updateMatrix();im.setMatrixAt(i,d.matrix);
+        col.set(C.c[Math.floor(Math.random()*C.c.length)]);col.offsetHSL(0,0,(Math.random()-0.5)*0.08);im.setColorAt(i,col);cols.push(col.clone());}
+      im.frustumCulled=false;grp.add(im);tag(im,C.k);
+      var rec={C:C,im:im,cols:cols,med:med,plq:plq,glow:0,spin:C.n==='易經'};CLASSICS.push(rec);
+      [plq,med,rim,im].forEach(function(o){o.userData.classic=rec;});
+    });
+  });
   /* 20 支天立柱 */
   /* 每支柱子題一句不同的《論語》，字級依句長自動調整，前後各一行 */
   var LINES=['學而時習之不亦說乎','有朋自遠方來不亦樂乎','溫故而知新可以為師矣','三人行必有我師焉','己所不欲勿施於人','德不孤必有鄰','見賢思齊焉','君子坦蕩蕩小人長戚戚','知者不惑仁者不憂勇者不懼','歲寒然後知松柏之後彫也',
@@ -5966,7 +6050,7 @@ var STOPS=[
  {g:'五、五常五行殿堂',t:'仁廳・土・麒麟（主殿）',c:V(X,49,-157.5),o:V(X,57,-195),
   x:'仁廳是<b>規模最大</b>的核心主殿：五行屬<b>土</b>、守護神獸<b>麒麟</b>、主色黃。挑高約 <b>27 公尺</b>（約 9 層樓），面積 2,800 平方公尺，可容納 1,500 多人。'},
  {g:'五、五常五行殿堂',t:'通天書架',c:V(X+15,49,-170),o:V(X-26,60,-186),
-  x:'仁廳兩側是高二十餘公尺的<b>通天書櫃</b>，共有 <b>9,306 個彩繪木格</b>，讓人置身書海之中。'},
+  x:'仁廳兩側是高二十餘公尺的<b>通天書櫃</b>，共有 <b>9,306 個彩繪木格</b>，讓人置身書海之中。書架分成<b>四書五經</b>九區：西牆《論語》《孟子》《大學》《中庸》（線裝書），東牆《詩經》《尚書》《禮記》《易經》《春秋》（竹簡卷）；每區有匾額與主題圓章，點任一區看介紹。'},
  {g:'五、五常五行殿堂',t:'天立柱與升降水晶燈',c:V(X+21,48,-206),o:V(X+4,61,-176),
   x:'<b>20 支天立柱</b>高近 20 公尺，由陸光正團隊設計，下段刻《論語》、上段刻松竹浮雕。中央的<b>三層蠟燭造型水晶吊燈</b>可升降，專為「天下歸仁」大型展演而設。'},
  {g:'五、五常五行殿堂',t:'信廳（杏亭）・木・青龍',c:V(XE-12,49.5,-170),o:V(XE+1,51.5,-183),
@@ -6018,7 +6102,16 @@ var INFO={
  liCaisson:{t:'八角疊層藻井・朱雀',x:'禮廳頂部是層層向內收斂的八角疊層藻井，中心繪有守護神獸<b>朱雀</b>。',s:11},
  liScroll:{t:'周代禮樂長卷',x:'長卷式組合繪畫，描摹周代<b>婚宴、禮儀、歌舞、祭祀、朝會</b>等禮樂秩序場景。',s:11},
  liMusic:{t:'禮樂・鐘鼓',x:'北牆兩側是仿<b>曾侯乙編鐘</b>的兩層鐘架：黑漆朱紋橫樑、青銅武士立柱，下層五口甬鐘、上層六口鈕鐘，依宮商角徵羽調音；東西兩側立著<b>虎座建鼓</b>，門頭成排懸鼓。點任何一口鐘或鼓都能敲響，點鐘架旁的紅頭撞鐘棒會自動演奏一段。',s:11},
- shelf:{t:'通天書架',x:'仁廳兩側高二十餘公尺的巨型書櫃，共 <b>9,306 個彩繪木格</b>。',s:13},
+ shelf:{t:'通天書架・四書五經',x:'仁廳兩側高二十餘公尺的巨型書櫃，共 <b>9,306 個彩繪木格</b>。導覽中把書架分成九區：西牆是<b>四書</b>（論語、孟子、大學、中庸，以線裝書呈現），東牆是<b>五經</b>（詩、書、禮、易、春秋，以竹簡卷呈現）。每區有匾額、專屬色系與主題圓章，點任一區可看介紹。',s:13},
+ cl_lunyu:{t:'《論語》・四書',x:'孔子弟子及再傳弟子記錄孔子與弟子言行，共 <b>20 篇</b>。核心是<b>「仁」</b>，談為學、修身、為政、交友。<br>名句：「學而時習之，不亦說乎？」「己所不欲，勿施於人。」<br>書架以紅金色線裝書呈現，圓章為「仁」字與杏花（杏壇講學）。',s:13},
+ cl_mengzi:{t:'《孟子》・四書',x:'孟子與弟子萬章等著，共 <b>7 篇</b>。主張<b>性善</b>、<b>仁政</b>與<b>民本</b>，重「義」與「浩然之氣」。<br>名句：「民為貴，社稷次之，君為輕。」<br>書架以深藍線裝書呈現，圓章為「義」字與浩然之氣。',s:13},
+ cl_daxue:{t:'《大學》・四書',x:'原為《禮記》中的一篇，相傳為曾子所作，南宋朱熹抽出列為四書之首。提出<b>三綱領</b>（明明德、親民、止於至善）與<b>八條目</b>（格物、致知、誠意、正心、修身、齊家、治國、平天下）。<br>名句：「大學之道，在明明德，在親民，在止於至善。」<br>圓章環繞八條目。',s:13},
+ cl_zhongyong:{t:'《中庸》・四書',x:'原為《禮記》中的一篇，相傳為孔子之孫<b>子思</b>所作。講<b>中和</b>與<b>誠</b>，不偏不倚、恰到好處。<br>名句：「喜怒哀樂之未發，謂之中；發而皆中節，謂之和。」<br>圓章為天平與「中」字。',s:13},
+ cl_shi:{t:'《詩經》・五經',x:'中國最早的詩歌總集，收西周至春秋中葉詩歌 <b>305 篇</b>，分<b>風、雅、頌</b>三類。孔子說：「不學詩，無以言。」<br>開篇：「關關雎鳩，在河之洲。窈窕淑女，君子好逑。」<br>書架以粉色竹簡卷呈現，圓章為河洲雎鳩與蘆葦。',s:13},
+ cl_shu:{t:'《尚書》・五經',x:'又稱《書經》，上古虞、夏、商、周的<b>政事文獻彙編</b>，體裁有典、謨、訓、誥、誓、命，是最早的史書與政書。<br>名句：「克明俊德，以親九族。」（〈堯典〉）<br>書架以古銅色竹簡卷呈現，圓章為青銅鼎。',s:13},
+ cl_li:{t:'《禮記》・五經',x:'西漢<b>戴聖</b>編，共 <b>49 篇</b>，彙集秦漢以前論述禮儀制度與禮義的文章，《大學》《中庸》都出自其中。<br>名句：「大道之行也，天下為公。」（〈禮運〉）<br>書架以朱紅與黑漆竹簡卷呈現，圓章為青銅爵。',s:13},
+ cl_yi:{t:'《易經》・五經',x:'即《周易》，由 <b>64 卦、384 爻</b>的卦爻辭構成，相傳伏羲畫卦、文王繫辭，講天地萬物的<b>變易</b>之道，被尊為「群經之首」。<br>名句：「天行健，君子以自強不息。」<br>書架以黑白竹簡卷呈現，圓章為太極與先天八卦，會緩緩轉動。',s:13},
+ cl_chunqiu:{t:'《春秋》・五經',x:'魯國的<b>編年史</b>，記魯隱公元年至魯哀公十四年共 <b>242 年</b>史事，相傳孔子據魯史修訂。用字精簡而寓褒貶，稱<b>「春秋筆法」</b>、「微言大義」。<br>例：「鄭伯克段于鄢。」<br>書架以秋橙與春綠竹簡卷呈現，圓章半邊春花、半邊秋葉。',s:13},
  column:{t:'天立柱',x:'共 <b>20 支</b>、近 20 公尺高，由陸光正團隊設計；下段刻《論語》，上段刻松竹浮雕。',s:14},
  chandelier:{t:'三層蠟燭水晶吊燈',x:'三層蠟燭造型、可升降，專為「天下歸仁」大型展演配置。',s:14},
  xinCaisson:{t:'11 層跌級藻井',x:'信廳天花採 <b>11 層跌級</b>的萬米木雕藻井，層層上收。',s:15},
@@ -6067,6 +6160,7 @@ function pick(cx,cy){
   var bb=findBeast(h.object);if(bb)beastTap(bb,h.object);
   var dsc=findDisciple(h.object);if(dsc)xingtan.ask(dsc);
   var zgi=findZg(h.object);if(zgi)zhonggu.hit(zgi);
+  var clr=findClassic(h.object);if(clr){clr.glow=1;try{zhPhrase(ZH.C5,0.32);}catch(e){}}
   if(tongzi&&h.object.userData.tzIdx)tongzi.tap(h);
   var scp=findScreenPanel(h.object);if(scp){embScreen.hit(scp);var it=camera.position.z<39.6?scp.back:scp.front;setTimeout(function(){$('hint').innerHTML='<b>'+it.n+'</b>（'+(camera.position.z<39.6?'背面・花鳥':'正面・尼山六景')+'）<br>'+it.d;$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,6000);},50);try{zhPhrase(ZH.G5,0.3);}catch(e){}}
   if(h.object.userData.disIdx||h.object.userData.disPlaque)disTap(h);
@@ -6884,7 +6978,7 @@ function startModels(){
 var BIRD_YAW=0;
 function birdsTick(dt){
   var i,f,p,n;for(i=0;i<mixers.length;i++)mixers[i].update(dt);
-  beastsTick(dt);xingtan.tick(dt);zhonggu.tick(dt);if(tongzi)tongzi.tick(dt);embScreen.tick(dt);
+  beastsTick(dt);xingtan.tick(dt);zhonggu.tick(dt);classicsTick(dt);if(tongzi)tongzi.tick(dt);embScreen.tick(dt);
   apricot.tick(dt,performance.now()/1000);
   for(i=0;i<flock.length;i++){f=flock[i];f.a+=f.w*dt;
     var x=f.cx+Math.cos(f.a)*f.r,z=f.cz+Math.sin(f.a)*f.r*0.8,y=f.y+Math.sin(f.a*3+i)*2;
