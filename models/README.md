@@ -43,6 +43,8 @@
 
 `confucius.glb`（孔子）為原創程式生成模型：小冠金簪、長髯、交領右衽寬袍大袖、捧竹簡；動畫 Idle／Bow（作揖）／Nod（頷首）／Teach（講學）／Awaken（拜師入門，背後「仁」字金環）。材質依名稱（robe、trim、skin…）在導覽裡換成青銅或喚醒後的藍金配色。
 
+`laozi.glb`（老子）同為原創程式生成模型：高額白髮道髻、木簪、長垂白眉與長髯、布衣寬袖、右手藜杖掛葫蘆；動畫 Idle／Bow／Nod／Speak。
+
 五隻神獸的互動寫在 `index.html` 的 `BEAST_DEFS` 設定表；之後青龍、白虎、麒麟只要做好帶動畫的 glb，再加一項設定即可。
 
 `bird-parrot.glb`（青鳥）與 `bird-stork.glb`（鶴群）取自 three.js 範例模型（原作 mirada.com，ro.me 專案），隨 three.js 以 MIT 授權發布。
