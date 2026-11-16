@@ -53,6 +53,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #menu .it.cur{background:#b8862f33}
 #hint{position:fixed;left:50%;transform:translateX(-50%);bottom:200px;width:max-content;max-width:min(92vw,560px);box-sizing:border-box;text-align:center;font-size:14px;line-height:1.6;color:#f2e4c2;background:#1a120cc8;border:1px solid #c9a24a55;border-radius:14px;padding:7px 14px;text-shadow:0 1px 2px #000;pointer-events:none;transition:opacity .6s;z-index:5}
 #hint:empty{display:none}
+#hint.on{pointer-events:auto}
+#sStop{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:5;display:none;border:1px solid #e0b860aa;background:#2a1e12ee;color:#f6d88e;border-radius:18px;padding:7px 12px;font-size:13px;font-family:inherit;box-shadow:0 3px 12px #0008}
 #iChip{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:5;display:none;border:1px solid #e0b860aa;background:#2a1e12ee;color:#f6d88e;border-radius:18px;padding:7px 14px;font-size:14px;font-family:inherit;box-shadow:0 3px 12px #0008;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
 #info{z-index:6;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto;background:#1f1610f2;border:1px solid #e0b860aa;border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px #000a;display:none}
 #info .hd{display:flex;align-items:center;gap:8px}
@@ -90,7 +92,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 <div id="hint">單指旋轉・雙指縮放／平移・點物件看解說</div>
 <div id="zone"></div>
 <div id="mapw"><div class="mh"><button class="btn sm" id="bMapFollow" title="跟隨">◎</button><button class="btn sm" id="bMapReset" style="visibility:hidden">1×</button><button class="btn sm" id="bNight" title="日夜">☾</button><button class="btn sm" id="bMapMin">－</button></div><canvas id="map"></canvas></div>
-<button id="iChip"></button>
+<button id="iChip"></button><button id="sStop">■ 停止朗讀</button>
 <div id="info"><div class="hd"><h3 id="iTitle"></h3><button class="btn" id="bInfoX">✕</button></div><div class="tx" id="iText"></div><button class="btn" id="bGoStop">前往此站導覽</button></div>
 <div id="joy"><i class="u">▲</i><i class="d">▼</i><i class="l">◀</i><i class="r">▶</i><div id="knob"></div><b>搖桿移動</b></div>
 <div id="card">
@@ -6322,7 +6324,9 @@ var ovT=0;function placeOverlays(now){if(now-ovT<250)return;ovT=now;var c=$('car
   if(c.style.display!=='none'){var r=c.getBoundingClientRect();if(r.height>0)b=Math.max(110,window.innerHeight-r.top+12);}
   else if(walk)b=Math.max(b,window.innerHeight-$('joy').getBoundingClientRect().top+30);
   if($('info').style.display==='block'){var ri=$('info').getBoundingClientRect();b=Math.max(b,window.innerHeight-ri.top+12);}
-  $('hint').style.bottom=(b+44)+'px';$('iChip').style.bottom=b+'px';}
+  var sp=!!(window.speechSynthesis&&speechSynthesis.speaking);$('sStop').style.display=sp?'block':'none';
+  var ch=$('iChip').style.display==='block';$('sStop').style.bottom=b+'px';$('iChip').style.bottom=(sp?b+44:b)+'px';$('hint').style.bottom=(b+44*((sp?1:0)+(ch?1:0))+(sp||ch?0:0)+ (sp||ch?0:44))+'px';
+  var hv=+getComputedStyle($('hint')).opacity>0.1;$('hint').className=hv?'on':'';}
 function showInfo(key,pt,dist){
   var it,stop=-1;
   if(key.indexOf('stop:')===0){stop=parseInt(key.slice(5),10);it={t:STOPS[stop].t,x:STOPS[stop].x};}
@@ -6332,7 +6336,7 @@ function showInfo(key,pt,dist){
   $('bGoStop').style.display=stop>=0?'':'none';
   $('info').style.display='block';
   if(pt){marker.position.copy(pt);var s=Math.max(0.6,(dist||10)*0.06);marker.scale.set(s,s,1);marker.visible=true;markerT=performance.now();}
-  speak(plain(it.t+'。'+it.x));
+  speak(plain(it.t+'。'+it.x),true);
 }
 function hideInfo(){$('info').style.display='none';marker.visible=false;}
 
@@ -6472,23 +6476,30 @@ function go(i){
   cur=(i+STOPS.length)%STOPS.length;var s=STOPS[cur];
   setCut(!!s.cut);flyTo(s.c,s.o,cur===0&&!started?10:2400);
   $('cNo').textContent=(cur+1)+' / '+STOPS.length;$('cTitle').textContent=s.t;$('cText').innerHTML=s.x;$('cText').scrollTop=0;
-  buildMenu();speak(plain(s.t+'。'+s.x));
+  buildMenu();speak(plain(s.t+'。'+s.x),!autoOn);
   if(autoOn&&!voiceOn){clearTimeout(autoTimer);autoTimer=setTimeout(function(){go(cur+1);},Math.max(8000,plain(s.x).length*170));}
 }
 function pickVoice(){if(!window.speechSynthesis)return null;var v=speechSynthesis.getVoices(),i;for(i=0;i<v.length;i++)if(/zh[-_]TW/i.test(v[i].lang))return v[i];for(i=0;i<v.length;i++)if(/^zh/i.test(v[i].lang))return v[i];return null;}
-function speak(t){
-  var id=++speakId;
-  if(!window.speechSynthesis)return;speechSynthesis.cancel();if(!voiceOn)return;
+/* 語音：同一段說明只唸一次（自動導覽除外）；正在唸時再點不會重頭再唸；畫面右下有「停止朗讀」可隨時取消 */
+var spokenOnce={};
+function speak(t,once){
+  if(once){if(spokenOnce[t])return;spokenOnce[t]=1;}
+  if(window.speechSynthesis&&speechSynthesis.speaking&&speak.last===t)return;
+  if(!window.speechSynthesis)return;if(!voiceOn){speakId++;speechSynthesis.cancel();return;}
+  var id=++speakId;speechSynthesis.cancel();speak.last=t;
   var u=new SpeechSynthesisUtterance(t);u.lang='zh-TW';var vv=pickVoice();if(vv)u.voice=vv;u.rate=1;
   u.onend=function(){if(id!==speakId)return;if(autoOn){clearTimeout(autoTimer);autoTimer=setTimeout(function(){go(cur+1);},1500);}};
   speechSynthesis.speak(u);
 }
+function stopVoice(){speakId++;speak.last=null;if(window.speechSynthesis)speechSynthesis.cancel();$('sStop').style.display='none';}
+$('sStop').addEventListener('click',function(e){e.stopPropagation();stopAuto();stopVoice();});
+$('hint').addEventListener('click',function(e){e.stopPropagation();hideHint();stopVoice();});
 function stopAuto(){if(!autoOn)return;autoOn=false;clearTimeout(autoTimer);$('bAuto').className='btn';$('bAuto').textContent='▶ 自動';}
 $('bPrev').addEventListener('click',function(){stopAuto();go(cur-1);});
 $('bNext').addEventListener('click',function(){stopAuto();go(cur+1);});
 $('bCut').addEventListener('click',function(){setCut(!cutOn);});
 $('bWalk').addEventListener('click',function(){if(walk)exitWalk();else enterWalk();});
-$('bInfoX').addEventListener('click',hideInfo);
+$('bInfoX').addEventListener('click',function(){hideInfo();stopVoice();});
 $('bGoStop').addEventListener('click',function(){var n=infoStop;hideInfo();if(n>=0){stopAuto();go(n);}});
 $('bVoice').addEventListener('click',function(){voiceOn=!voiceOn;$('bVoice').className='btn'+(voiceOn?' on':'');if(voiceOn){speak(plain(STOPS[cur].t+'。'+STOPS[cur].x));}else if(window.speechSynthesis){speakId++;speechSynthesis.cancel();if(autoOn){clearTimeout(autoTimer);autoTimer=setTimeout(function(){go(cur+1);},6000);}}});
 $('bAuto').addEventListener('click',function(){
@@ -6856,7 +6867,7 @@ function wuxingFinale(b){
   for(k=0;k<10;k++)bsRing(b,cols[k%5][0],k*200);
   bsBurst(b,120,1.5,2.5,1.2,0.5);b.g=4;
   $('hint').textContent='五行圓滿・木火土金水，仁義禮智信';$('hint').style.opacity=1;setTimeout(hideHint,6000);
-  try{speak('五行圓滿。木火土金水，對應仁義禮智信，五常俱足。');}catch(e){}
+  try{speak('五行圓滿。木火土金水，對應仁義禮智信，五常俱足。',true);}catch(e){}
 }
 function wxTick(dt){for(var i=wxPillars.length-1;i>=0;i--){var w=wxPillars[i];w.t+=dt;if(w.t<0)continue;var k=Math.min(1,w.t/1.2);
   w.m.scale.y=w.h*k;w.m.position.y=w.m.userData.y0===undefined?(w.m.userData.y0=w.m.position.y):w.m.userData.y0;w.m.position.y=w.m.userData.y0+w.m.scale.y/2;
@@ -6995,8 +7006,8 @@ var LUNYU=[['學而時習之，不亦說乎？','學而'],['有朋自遠方來�
   ['知者不惑，仁者不憂，勇者不懼。','子罕'],['歲寒，然後知松柏之後彫也。','子罕'],['君子和而不同，小人同而不和。','子路'],['工欲善其事，必先利其器。','衛靈公'],['人無遠慮，必有近憂。','衛靈公'],['敏而好學，不恥下問。','公冶長']];
 var lyIdx=Math.floor(Math.random()*LUNYU.length);
 function sageSay(text,src,ms){$('hint').innerHTML=text+(src?'<br><small style="opacity:.75">《論語・'+src+'》</small>':'');$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,ms||5500);}
-function sageQuote(delay){setTimeout(function(){var q=LUNYU[lyIdx++%LUNYU.length];sageSay(q[0],q[1]);try{speak(q[0]);}catch(e){}},delay||600);}
-function speakNow(t){if(!window.speechSynthesis)return;try{speakId++;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang='zh-TW';var vv=pickVoice();if(vv)u.voice=vv;u.rate=0.95;speechSynthesis.speak(u);}catch(e){}}
+function sageQuote(delay){setTimeout(function(){var q=LUNYU[lyIdx++%LUNYU.length];sageSay(q[0],q[1]);try{if(!(window.speechSynthesis&&speechSynthesis.speaking))speak(q[0],true);}catch(e){}},delay||600);}
+function speakNow(t){if(!window.speechSynthesis||!voiceOn||spokenOnce[t])return;spokenOnce[t]=1;try{speakId++;speechSynthesis.cancel();speak.last=t;var u=new SpeechSynthesisUtterance(t);u.lang='zh-TW';var vv=pickVoice();if(vv)u.voice=vv;u.rate=0.95;speechSynthesis.speak(u);}catch(e){}}
 var SAGE_PAL={
   bronze:{robe:[0x86643c],inner:[0x8e6c44],trim:[0x664a2a,0x3a2a12],sash:[0x6e5030],skin:[0xa07c50],beard:[0x5e4428],hat:[0x5e4428],gold:[0xb08848],eye_ink:[0x3a2a18],scroll:[0xa88a5c],jade:[0x5a7a58]},
   awake:{robe:[0x2c3a7c],inner:[0xf2eadc],trim:[0xe2b44a,0xffd88a],sash:[0xb03228],skin:[0xf0c8a2],beard:[0x1e2442],hat:[0x1e2442],gold:[0xffd060],eye_ink:[0x101020],scroll:[0xffffff],jade:[0x40d0a0]}};
@@ -7121,7 +7132,7 @@ BEAST_DEFS.kongzi={gaze:['Head'],gazeR:12,nearR:7,awakenTaps:0,noWx:true,ringS:1
   approach:function(){zhiAsk();},tap:{head:zhiAsk,hands:zhiAsk,body:zhiAsk},awaken:function(){}};
 BEAST_DEFS.laozi={gaze:['Head'],gazeR:12,nearR:7,awakenTaps:0,noWx:true,ringS:1.2,glow:/^(trim|gold)$/,glowColor:0x9fd8ff,dflt:'body',part:function(n){if(/^Staff|^Gourd/.test(n))return 'hands';return sageParts(n);},
   tap:{head:function(b){if(beastPlay(b,'Nod'))zhiLaozi(500);},hands:function(b){if(beastPlay(b,'Speak'))zhiLaozi(800);},body:function(b){if(beastPlay(b,'Bow'))zhiLaozi(700);}},awaken:function(){}};
-function zhiLaozi(d){setTimeout(function(){var q=ZHI_LAOZI[zhiLz++%ZHI_LAOZI.length];zhiSay(q[0]+'<br><small style="opacity:.75">《道德經》'+q[1]+'</small>',5000);try{speak(q[0]);}catch(e){}},d||600);}
+function zhiLaozi(d){setTimeout(function(){var q=ZHI_LAOZI[zhiLz++%ZHI_LAOZI.length];zhiSay(q[0]+'<br><small style="opacity:.75">《道德經》'+q[1]+'</small>',5000);try{if(!(window.speechSynthesis&&speechSynthesis.speaking))speak(q[0],true);}catch(e){}},d||600);}
 function zhiPair(key,gltf){
   var inst=cloneScene(gltf.scene),holder=new THREE.Group(),bb=new THREE.Box3().setFromObject(inst),H=key==='laozi'?2.62:2.55;
   var s=H/Math.max(0.01,bb.max.y-bb.min.y);inst.scale.setScalar(s);inst.position.y=-bb.min.y*s;holder.add(inst);
