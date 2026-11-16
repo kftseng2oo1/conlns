@@ -60,7 +60,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #bGoStop{width:100%}
 #zone{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 16px);background:#1f1610cc;border:1px solid #c9a24a66;border-radius:20px;padding:6px 14px;font-size:14px;color:#f0d48e;display:none;pointer-events:none;white-space:nowrap}
 #joy{position:fixed;left:24px;bottom:calc(env(safe-area-inset-bottom) + 64px);width:120px;height:120px;border-radius:50%;background:#ffffff14;border:2px solid #e8c77a66;display:none;pointer-events:none}
-#knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:#e8c77acc;box-shadow:0 2px 8px #0008}
+#knob{position:absolute;left:36px;top:36px;width:48px;height:48px;border-radius:50%;background:#e8c77acc;box-shadow:0 2px 8px #0008;z-index:1}
+#joy i{position:absolute;font-style:normal;color:#f0d48ecc;font-size:15px;line-height:1;pointer-events:none}
+#joy .u{left:53px;top:6px}#joy .d{left:53px;bottom:6px}#joy .l{left:8px;top:52px}#joy .r{right:8px;top:52px}
+#joy b{position:absolute;left:0;right:0;bottom:-22px;text-align:center;font-size:12px;font-weight:normal;color:#f0d48ecc;letter-spacing:2px;text-shadow:0 1px 3px #000}
 #mapw{position:fixed;right:8px;top:calc(env(safe-area-inset-top) + 50px);z-index:3;background:#1f1610cc;border:1px solid #c9a24a66;border-radius:10px;padding:4px}
 #mapw .mh{display:flex;align-items:center;gap:4px;justify-content:flex-end}
 #mapw .mh span{flex:1;font-size:10px;color:#e8c77a;padding-left:1px;white-space:nowrap}
@@ -86,7 +89,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 <div id="zone"></div>
 <div id="mapw"><div class="mh"><button class="btn sm" id="bMapFollow" title="跟隨">◎</button><button class="btn sm" id="bMapReset" style="visibility:hidden">1×</button><button class="btn sm" id="bNight" title="日夜">☾</button><button class="btn sm" id="bMapMin">－</button></div><canvas id="map"></canvas></div>
 <div id="info"><div class="hd"><h3 id="iTitle"></h3><button class="btn" id="bInfoX">✕</button></div><div class="tx" id="iText"></div><button class="btn" id="bGoStop">前往此站導覽</button></div>
-<div id="joy"><div id="knob"></div></div>
+<div id="joy"><i class="u">▲</i><i class="d">▼</i><i class="l">◀</i><i class="r">▶</i><div id="knob"></div><b>搖桿移動</b></div>
 <div id="card">
   <div class="grip" id="cGrip"></div>
   <div class="hd"><span class="no" id="cNo"></span><h2 id="cTitle"></h2><button class="btn" id="bMin">－</button></div>
@@ -5738,6 +5741,8 @@ function pick(cx,cy){
   var hits=ray.intersectObjects(scene.children,true),h=null,i;
   for(i=0;i<hits.length;i++){if(hits[i].object!==marker&&!hits[i].object.isPoints&&hits[i].object!==moon&&visibleChain(hits[i].object)){h=hits[i];break;}}
   if(!h){hideInfo();return;}
+  if(walk&&h.face&&h.distance<75&&!findBeast(h.object)&&!findDisciple(h.object)&&!findZg(h.object)&&!h.object.userData.disIdx&&!h.object.userData.disPlaque&&!h.object.userData.apricot&&!h.object.isInstancedMesh){
+    var wn=h.face.normal.clone().transformDirection(h.object.matrixWorld);if(wn.y>0.6){hideInfo();walkGo(h.point);return;}}
   var key=findInfo(h.object);
   if(!key){var z=zoneAt(h.point);if(z<0||h.object===groundMesh){hideInfo();return;}key='stop:'+z;}
   var bb=findBeast(h.object);if(bb)beastTap(bb,h.object);
@@ -5792,19 +5797,32 @@ function enterWalk(){
   pitch=0;walk=true;curZone=-2;refreshNear(true);
   $('bWalk').className='btn on';$('bWalk').textContent='離開';
   $('card').style.display='none';$('joy').style.display='block';$('zone').style.display='block';
-  $('hint').textContent='左下拖曳移動・右側拖曳環顧・點物件看解說';$('hint').style.opacity=1;setTimeout(hideHint,5000);
+  $('hint').innerHTML='點地面就會走過去・拖曳畫面轉頭環顧<br>左下搖桿也能走・點物件看解說・點小地圖可瞬間移動';$('hint').style.opacity=1;setTimeout(hideHint,6500);
 }
 function exitWalk(){
   if(!walk)return;walk=false;
   var dir=new THREE.Vector3();camera.getWorldDirection(dir);
   target.copy(camera.position).addScaledVector(dir,8);syncSph();
   $('bWalk').className='btn';$('bWalk').textContent='漫遊';
-  $('card').style.display='';$('joy').style.display='none';$('zone').style.display='none';resetJoy();
+  $('card').style.display='';$('joy').style.display='none';$('zone').style.display='none';resetJoy();walkTo=null;walkMark.visible=false;
 }
-function resetJoy(){joy.id=null;joy.x=joy.y=0;var b=$('joy');b.style.left='';b.style.top='';b.style.bottom='';$('knob').style.transform='translate(0px,0px)';}
+function resetJoy(){joy.id=null;joy.x=joy.y=0;$('knob').style.transform='translate(0px,0px)';}
+/* 點地前往：點地面就自動走過去（避開牆面、到了或被擋住就停），地上出現金色光圈 */
+var walkTo=null,walkStuck=0,walkMark=(function(){var g=new THREE.Group(),m1=new THREE.Mesh(new THREE.RingGeometry(0.42,0.55,40),new THREE.MeshBasicMaterial({color:0xffd36a,transparent:true,opacity:0.9,depthWrite:false,side:THREE.DoubleSide})),
+  m2=new THREE.Mesh(new THREE.CircleGeometry(0.16,24),new THREE.MeshBasicMaterial({color:0xffe6a0,transparent:true,opacity:0.85,depthWrite:false,side:THREE.DoubleSide}));
+  m1.rotation.x=m2.rotation.x=-Math.PI/2;g.add(m1,m2);g.visible=false;g.renderOrder=5;g.userData.noCollide=true;g.traverse(function(o){o.raycast=function(){};o.userData.noCollide=true;});scene.add(g);return g;})();
+function walkGo(p){walkTo=p.clone();walkStuck=0;walkMark.position.set(p.x,p.y+0.04,p.z);walkMark.visible=true;walkMark.userData.t=0;}
 function walkStep(dt){
   refreshNear(false);
   var f=-joy.y,s=joy.x,run=false;
+  if(walkMark.visible){walkMark.userData.t=(walkMark.userData.t||0)+dt;var k=1+0.15*Math.sin(walkMark.userData.t*6);walkMark.scale.set(k,k,k);}
+  if(walkTo&&(Math.abs(f)+Math.abs(s)>0.05||keys.w||keys.s||keys.a||keys.d||keys.arrowup||keys.arrowdown||keys.arrowleft||keys.arrowright)){walkTo=null;walkMark.visible=false;}
+  if(walkTo){var tx=walkTo.x-feet.x,tz=walkTo.z-feet.z,td=Math.sqrt(tx*tx+tz*tz);
+    if(td<0.45){walkTo=null;walkMark.visible=false;}
+    else{var want=Math.atan2(-tx,-tz),da=want-yaw;while(da>Math.PI)da-=2*Math.PI;while(da<-Math.PI)da+=2*Math.PI;yaw+=da*Math.min(1,dt*2.5);
+      var spd=Math.min(td,(td>12?7:4.5)*dt),ox=feet.x,oz=feet.z,ux=tx/td*spd,uz=tz/td*spd;
+      if(!tryMove(ux,uz)){if(!tryMove(ux,0))tryMove(0,uz);}
+      if(Math.abs(feet.x-ox)+Math.abs(feet.z-oz)<spd*0.2){walkStuck+=dt;if(walkStuck>0.7){walkTo=null;walkMark.visible=false;$('hint').textContent='前方被擋住了，換個地方點點看';$('hint').style.opacity=1;setTimeout(hideHint,2500);}}else walkStuck=0;}}
   if(keys.w||keys.arrowup)f+=1;if(keys.s||keys.arrowdown)f-=1;if(keys.a||keys.arrowleft)s-=1;if(keys.d||keys.arrowright)s+=1;if(keys.shift)run=true;
   var mag=Math.sqrt(f*f+s*s);if(mag>1){f/=mag;s/=mag;mag=1;}
   if(mag>0.05){
@@ -5821,13 +5839,13 @@ function walkStep(dt){
 
 /* =================== 觸控 / 滑鼠 / 鍵盤 =================== */
 var tap=null;
-function joyArea(x,y){return x<window.innerWidth*0.45&&y>window.innerHeight*0.5;}
+function joyArea(x,y){var r=$('joy').getBoundingClientRect();return Math.hypot(x-(r.left+r.width/2),y-(r.top+r.height/2))<r.width*0.75;}
 canvas.addEventListener('touchstart',function(e){e.preventDefault();hideHint();
   var i,t;
   if(e.touches.length===1){t=e.changedTouches[0];tap={id:t.identifier,x:t.clientX,y:t.clientY,tm:Date.now()};}else tap=null;
   if(walk){
     for(i=0;i<e.changedTouches.length;i++){t=e.changedTouches[i];
-      if(joy.id===null&&joyArea(t.clientX,t.clientY)){joy.id=t.identifier;joy.cx=t.clientX;joy.cy=t.clientY;var b=$('joy');b.style.left=(t.clientX-60)+'px';b.style.top=(t.clientY-60)+'px';b.style.bottom='auto';}
+      if(joy.id===null&&joyArea(t.clientX,t.clientY)){var jr=$('joy').getBoundingClientRect();joy.id=t.identifier;joy.cx=jr.left+jr.width/2;joy.cy=jr.top+jr.height/2;walkTo=null;walkMark.visible=false;}
       else if(look.id===null){look.id=t.identifier;look.x=t.clientX;look.y=t.clientY;}}
     return;
   }
