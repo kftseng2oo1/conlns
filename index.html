@@ -5234,7 +5234,7 @@ function pick(cx,cy){
   if(!h){hideInfo();return;}
   var key=findInfo(h.object);
   if(!key){var z=zoneAt(h.point);if(z<0||h.object===groundMesh){hideInfo();return;}key='stop:'+z;}
-  if(beasts[key])beastTap(beasts[key],h.object);
+  var bb=findBeast(h.object);if(bb)beastTap(bb,h.object);
   showInfo(key,h.point,h.distance);
 }
 function showInfo(key,pt,dist){
@@ -5596,7 +5596,7 @@ function applySlot(key,gltf,cfg){
     holder.position.set(pc.x,pb.min.y,pc.z);holder.rotation.y=p.rotation.y+(cfg.rotY||0)*Math.PI/180;
     if(cfg.tint)tintModel(inst,cfg.tint,cfg.emissive);
     holder.userData.info=findInfo(p)||key;scene.add(holder);
-    if(BEAST_DEFS[key]&&i===0&&!cfg.tint)beastSetup(key,inst,gltf,holder);
+    if(BEAST_DEFS[key]&&!cfg.tint)beastSetup(key,inst,gltf,holder,i);
     else if(cfg.animate)playClip(inst,gltf,cfg.speed||1,i*0.37);
     p.visible=false;p.traverse(function(o){o.userData.noCollide=true;});
   }
@@ -5606,8 +5606,10 @@ function applySlot(key,gltf,cfg){
 /* ===== 神獸互動模組：各神獸以設定表描述「點哪個部位 → 播哪段動畫、什麼聲音、什麼特效」 =====
    新增神獸：在 BEAST_DEFS 加一項（part 判斷部位、tap 各部位反應、awaken 連點五下的大招、glow 發光材質） */
 var beasts={};
-function beastSetup(key,inst,gltf,holder){
+function beastSetup(key,inst,gltf,holder,idx){
   var def=BEAST_DEFS[key],A={},i,mx=new THREE.AnimationMixer(inst);
+  /* 同一模型的複本（例如四隻麒麟）各自擁有材質，發光才不會互相干擾 */
+  if(idx){var mc={};inst.traverse(function(o){if(o.isMesh&&!Array.isArray(o.material)){var m=o.material;if(!mc[m.uuid])mc[m.uuid]=m.clone();o.material=mc[m.uuid];}});}
   for(i=0;i<gltf.animations.length;i++)A[gltf.animations[i].name]=mx.clipAction(gltf.animations[i]);
   if(!A.Idle)return;
   A.Idle.play();
@@ -5628,7 +5630,7 @@ function beastSetup(key,inst,gltf,holder){
     e.action.fadeOut(0.3);
     if(b.next){var n=b.next;b.next=null;b.busy=false;n();return;}
     A.Idle.reset().fadeIn(0.3).play();b.busy=false;});
-  mixers.push(mx);beasts[key]=b;
+  mixers.push(mx);b.key=key;beasts[key+(idx?'#'+idx:'')]=b;holder.userData.beast=b;
 }
 function beastPlay(b,name,loop,reps,force){
   var a=b.A[name];if(!a||(b.busy&&!force))return false;b.busy=true;
@@ -5639,7 +5641,7 @@ function beastTap(b,obj){
   var n=obj,part=b.def.dflt;
   while(n&&n!==b.holder){var p=b.def.part(n.name||'');if(p){part=p;break;}n=n.parent;}
   b.taps++;
-  if(b.taps%5===0&&!b.busy){b.def.awaken(b);return;}
+  if(b.taps%5===0&&!b.busy){b.def.awaken(b);wxMark(b);return;}
   var f=b.def.tap[part];if(f)f(b);
 }
 function beastsTick(dt){
@@ -5648,7 +5650,7 @@ function beastsTick(dt){
     for(i=0;i<b.glowMats.length;i++)b.glowMats[i].emissiveIntensity=b.glowMats[i].userData.base*(1+b.g*2.2)+Math.sin(t*1.5)*0.04;
     for(i=0;i<b.eyes.length;i++)b.eyes[i].emissiveIntensity=b.eyes[i].userData.base*(1+b.g);
     b.light.intensity=b.g*1.5;}
-  bsRingTick(dt);bsSparkTick(dt);
+  bsRingTick(dt);bsSparkTick(dt);wxTick(dt);
 }
 var _gv=new THREE.Vector3(),_gm=new THREE.Matrix4();
 function beastGaze(b,dt){
@@ -5670,7 +5672,33 @@ function beastApproach(b,dt){
   b.near=near;
   if(b.hold){var a=b.A[b.hold];if(a){if(b.near&&a.time>a.getClip().duration*0.45)a.timeScale=0;else if(!b.near){a.timeScale=1;b.hold=null;}}}
 }
-/* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商） --- */
+function findBeast(o){while(o&&o!==scene){if(o.userData&&o.userData.beast)return o.userData.beast;o=o.parent;}return null;}
+/* 五行圓滿：四神獸（玄武、朱雀、青龍、白虎）都喚醒過，再喚醒麒麟，五色光柱自五方升起 */
+var WX_KEY='conlns-wuxing',wxDone={};
+try{wxDone=JSON.parse(localStorage.getItem(WX_KEY)||'{}')||{};}catch(e){wxDone={};}
+function wxMark(b){
+  wxDone[b.key]=1;try{localStorage.setItem(WX_KEY,JSON.stringify(wxDone));}catch(e){}
+  var four=['xuanwu','zhuque','dragon','tiger'],n=0,i;for(i=0;i<4;i++)if(wxDone[four[i]])n++;
+  if(b.key==='qilin'){if(n===4)setTimeout(function(){wuxingFinale(b);},2600);
+    else{$('hint').textContent='已喚醒四神獸 '+n+'/4，集齊後再來喚醒麒麟';$('hint').style.opacity=1;setTimeout(hideHint,4000);}}
+  else{$('hint').textContent='已喚醒四神獸 '+n+'/4'+(n===4?'，前往仁廳喚醒麒麟':'');$('hint').style.opacity=1;setTimeout(hideHint,3500);}
+}
+var wxPillars=[];
+function wuxingFinale(b){
+  var p=b.holder.position,sc=b.inst.scale.x,R=3.2*sc,cols=[[0x3fd8b8,1,0],[0xff5a20,0,1],[0xe8eeff,-1,0],[0x5a6aff,0,-1],[0xffd36a,0,0]],k;
+  for(k=0;k<5;k++){var c=cols[k],m=new THREE.Mesh(new THREE.CylinderGeometry(0.35*sc,0.6*sc,1,24,1,true),new THREE.MeshBasicMaterial({color:c[0],transparent:true,opacity:0.0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
+    m.position.set(p.x+c[1]*R,p.y,p.z+c[2]*R);m.userData.noCollide=true;m.raycast=function(){};scene.add(m);wxPillars.push({m:m,t:-k*0.25,h:12*sc});}
+  [131,196,262,294,330,392,440,523].forEach(function(f,i){bsTone(f,4,0.07,i%2?'triangle':'sine',i*0.15);});
+  for(k=0;k<10;k++)bsRing(b,cols[k%5][0],k*200);
+  bsBurst(b,120,1.5,2.5,1.2,0.5);b.g=4;
+  $('hint').textContent='五行圓滿・木火土金水，仁義禮智信';$('hint').style.opacity=1;setTimeout(hideHint,6000);
+  try{speak('五行圓滿。木火土金水，對應仁義禮智信，五常俱足。');}catch(e){}
+}
+function wxTick(dt){for(var i=wxPillars.length-1;i>=0;i--){var w=wxPillars[i];w.t+=dt;if(w.t<0)continue;var k=Math.min(1,w.t/1.2);
+  w.m.scale.y=w.h*k;w.m.position.y=w.m.userData.y0===undefined?(w.m.userData.y0=w.m.position.y):w.m.userData.y0;w.m.position.y=w.m.userData.y0+w.m.scale.y/2;
+  w.m.material.opacity=0.55*Math.min(1,w.t/0.6)*(1-smooth01(4,6,w.t));if(w.t>6){scene.remove(w.m);w.m.geometry.dispose();w.m.material.dispose();wxPillars.splice(i,1);}}}
+function smooth01(a,b,x){var t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);}
+/* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商，麒麟土＝宮） --- */
 var bsAC=null;
 function bsAudio(){if(!bsAC){try{bsAC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(bsAC&&bsAC.state==='suspended')bsAC.resume();return bsAC;}
 function bsTone(f,dur,vol,type,delay,glide){var a=bsAudio();if(!a)return;var t0=a.currentTime+(delay||0),o=a.createOscillator(),g=a.createGain();
@@ -5721,6 +5749,19 @@ var BEAST_DEFS={
       leg:function(b){beastPlay(b,'Walk',THREE.LoopRepeat,1);}},
     awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[440,523,659,880,1047].forEach(function(f,i){bsTone(f,2.4,0.07,'sine',i*0.12);});bsGong(YU);
       for(var k=0;k<6;k++)bsRing(b,k%2?0xe6c97a:0x6fe3d6,k*220);}},
+  /* 仁廳、集賢廳 麒麟（四隻）：點頭長鳴、點蹄踏步生光、點身體抖鬃、點石台吐玉書「天下為公」；連點五下喚醒、騰躍繞殿 */
+  qilin:{gaze:['Head'],nearR:8,approach:function(b){if(beastPlay(b,'Cry')){bsTone(523,1.2,0.08,'triangle',0,784);bsTone(262,1.4,0.05);}},
+    glow:/^(scales|jade|horn|qilin_eye|wisp|mane|scroll)$/,glowColor:0xffd36a,dflt:'body',
+    part:function(n){if(/^(Head$|Neck$|Jaw$|Mane$|Horn$|Scroll)/.test(n))return 'head';if(/^Leg_/.test(n))return 'hoof';if(n==='Altar')return 'altar';if(/^(Hips$|Spine$|Chest$|Tail|Body$)/.test(n))return 'body';return null;},
+    tap:{
+      head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.5);bsTone(523,1.4,0.1,'triangle',0,784);bsTone(784,1.2,0.06,'sine',0.35,659);bsTone(262,1.6,0.06);}},
+      hoof:function(b){if(beastPlay(b,'Stamp')){bsNoise(0.25,0.6,'lowpass',300,1,0.3);bsTone(131,0.5,0.15,'sine',0.3);[1047,1175,1319].forEach(function(f,i){bsTone(f,0.8,0.04,'sine',0.35+i*0.06);});setTimeout(function(){bsRing(b,0xffd36a,0);bsBurst(b,40,0.7,0.5,0.5,0.6);},420);}},
+      body:function(b){if(beastPlay(b,'Shake')){[1047,1175,1319,1568,1760].forEach(function(f,i){bsTone(f,1.4,0.05,'sine',i*0.07);});bsBurst(b,40,1.8,0.6,0.5,0.6);}},
+      altar:function(b){if(beastPlay(b,'Scroll')){b.g=Math.max(b.g,1.8);[262,392,523,659,784].forEach(function(f,i){bsTone(f,2.4,0.07,'triangle',i*0.25);bsTone(f*2,1.6,0.025,'sine',i*0.25+0.02);});
+        setTimeout(function(){$('hint').textContent='麒麟吐玉書・天下為公';$('hint').style.opacity=1;setTimeout(hideHint,3500);},900);}}},
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[131,196,262,294,330,392,440].forEach(function(f,i){bsTone(f,3.2,0.06,i%2?'triangle':'sine',i*0.1);});
+      for(var k=0;k<6;k++)bsRing(b,k%2?0xffd36a:0x5ff0c0,k*220);
+      b.next=function(){beastPlay(b,'Leap',THREE.LoopOnce,1,true);};}},
   /* 義廳 白虎：點頭虎嘯、點前爪揮爪、點尾巴甩尾、點身體起身、點山岩台座金石鳴；連點五下喚醒白虎、繞殿奔馳 */
   tiger:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Stand')){b.hold='Stand';bsNoise(1.2,0.45,'lowpass',200,1.2);bsTone(73,1.2,0.14,'sawtooth',0,98);}},
     glow:/^(fur|fur_leg|fur_head|armor|stars|star_lines|wisp|tiger_eye)$/,glowColor:0x9fc8ff,dflt:'body',
