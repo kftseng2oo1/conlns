@@ -5437,6 +5437,147 @@ var DISCIPLES72=[];
 function disTap(h){var o=h.object,k=-1;if(o.userData.disPlaque&&h.faceIndex!==undefined)k=Math.floor(h.faceIndex/2);else if(o.userData.disIdx&&h.instanceId!==undefined)k=o.userData.disIdx[h.instanceId];
   if(k<0||!DISCIPLES72[k])return;var f=DISCIPLES72[k];$('hint').innerHTML=f.name+(f.zi?'<small style="opacity:.8">（字'+f.zi+'）</small>':'')+'<br><small style="opacity:.75">孔門七十二賢之一</small>';$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,3500);try{zhPhrase(ZH.E5,0.3);}catch(e){}}
 
+/* 杏壇講學圖 繪製程式 */
+/* 〈杏壇講學圖〉工筆設色（Canvas 程式繪製）：絹本古色、遠山雲氣、杏樹繁花、石砌杏壇、孔子撫琴講學、七十弟子環列
+   paintXingtan(ctx, w, h, font) — 建議 w:h ≈ 3.24:1 */
+function paintXingtan(g, W, H, FONT) {
+  FONT = FONT || '"Noto Serif TC","PingFang TC",serif';
+  var seed = 72, R = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }, TAU = Math.PI * 2;
+  var S = H / 790;   // layout designed at 2560x790
+  g.save(); g.scale(W / 2560, H / 790); W = 2560; H = 790;
+  var INK = 'rgba(40,28,20,.85)';
+  // ---- 絹本底色：古絹、縱橫絲紋、四邊暈黃 ----
+  var gr = g.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#e8dcbc'); gr.addColorStop(0.55, '#e2d3ae'); gr.addColorStop(1, '#cfbb8c'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  g.fillStyle = 'rgba(120,96,60,.035)'; for (var y = 0; y < H; y += 3) g.fillRect(0, y, W, 1); for (var x = 0; x < W; x += 3) g.fillRect(x, 0, 1, H);
+  for (var i = 0; i < 260; i++) { g.fillStyle = 'rgba(150,120,70,' + (0.02 + R() * 0.05) + ')'; g.beginPath(); g.arc(R() * W, R() * H, 4 + R() * 30, 0, TAU); g.fill(); }
+  // ---- 遠山雲氣（青綠山水、淡墨皴擦） ----
+  function hills(y0, amp, col, alpha, seedOff) { var hg = g.createLinearGradient(0, y0 - amp, 0, y0 + 120); hg.addColorStop(0, col); hg.addColorStop(0.7, col); hg.addColorStop(1, 'rgba(226,211,174,0)'); g.fillStyle = hg; g.globalAlpha = alpha; g.beginPath(); g.moveTo(0, y0 + 120);
+    for (var x = 0; x <= W; x += 16) { var yy = y0 - amp * (0.5 + 0.5 * Math.sin(x * 0.004 + seedOff) * Math.sin(x * 0.0013 + seedOff * 2)) - Math.abs(Math.sin(x * 0.011 + seedOff)) * amp * 0.25; g.lineTo(x, yy); }
+    g.lineTo(W, y0 + 120); g.closePath(); g.fill(); g.globalAlpha = 1; }
+  hills(260, 150, '#a9bcb4', 0.55, 1.3); hills(320, 120, '#8fae9c', 0.55, 2.7); hills(380, 90, '#7d9e88', 0.45, 0.4);
+  for (i = 0; i < 6; i++) { var my = 230 + i * 30, mg = g.createLinearGradient(0, my - 30, 0, my + 30); mg.addColorStop(0, 'rgba(236,228,206,0)'); mg.addColorStop(0.5, 'rgba(236,228,206,.75)'); mg.addColorStop(1, 'rgba(236,228,206,0)'); g.fillStyle = mg; g.fillRect(0, my - 30, W, 60); }
+  function cloud(x, y, s) { g.strokeStyle = 'rgba(90,110,120,.5)'; g.fillStyle = 'rgba(245,240,228,.85)'; g.lineWidth = 1.6; for (var k = 0; k < 4; k++) { g.beginPath(); g.arc(x + k * 26 * s, y - (k % 2) * 10 * s, 18 * s, Math.PI, 0); g.fill(); g.stroke(); }
+    g.beginPath(); for (var a = 0; a < 3 * Math.PI; a += 0.2) { var r = 12 * s * (1 - a / 11); g.lineTo(x + 40 * s + Math.cos(a) * r, y - 6 * s + Math.sin(a) * r); } g.stroke(); }
+  cloud(240, 150, 1.4); cloud(720, 110, 1.1); cloud(1980, 130, 1.3); cloud(2260, 200, 0.9);
+  // ---- 地面：淡赭坡地與草點 ----
+  var gg = g.createLinearGradient(0, 440, 0, H); gg.addColorStop(0, 'rgba(176,160,110,.35)'); gg.addColorStop(1, 'rgba(160,130,80,.55)'); g.fillStyle = gg; g.beginPath(); g.moveTo(0, 470); g.quadraticCurveTo(700, 440, 1280, 460); g.quadraticCurveTo(1900, 440, W, 480); g.lineTo(W, H); g.lineTo(0, H); g.fill();
+  for (i = 0; i < 500; i++) { var gx = R() * W, gy = 470 + R() * 320; g.strokeStyle = 'rgba(90,120,70,' + (0.2 + R() * 0.3) + ')'; g.lineWidth = 1; g.beginPath(); g.moveTo(gx, gy); g.lineTo(gx + (R() - 0.5) * 6, gy - 6 - R() * 6); g.stroke(); }
+  // ---- 杏樹（虬幹、繁花） ----
+  function blossomCloud(cx, cy, rx, ry, n) { for (var k = 0; k < n; k++) { var a = R() * TAU, rr = Math.sqrt(R()), x = cx + Math.cos(a) * rx * rr, y = cy + Math.sin(a) * ry * rr, r = 3 + R() * 4;
+      g.fillStyle = R() < 0.25 ? 'rgba(232,150,170,.95)' : (R() < 0.5 ? 'rgba(250,226,230,.95)' : 'rgba(255,246,244,.95)'); for (var p = 0; p < 5; p++) { var b = p / 5 * TAU; g.beginPath(); g.arc(x + Math.cos(b) * r * 0.6, y + Math.sin(b) * r * 0.6, r * 0.55, 0, TAU); g.fill(); }
+      if (R() < 0.5) { g.fillStyle = '#c8402e'; g.beginPath(); g.arc(x, y, 1.2, 0, TAU); g.fill(); } } }
+  function limb(x0, y0, x1, y1, w0, w1, bend) { var mx = (x0 + x1) / 2 + bend, my = (y0 + y1) / 2 - Math.abs(bend) * 0.3, n = 14;
+    for (var k = 0; k < n; k++) { var t0 = k / n, t1 = (k + 1) / n; function P(t) { return [(1 - t) * (1 - t) * x0 + 2 * (1 - t) * t * mx + t * t * x1, (1 - t) * (1 - t) * y0 + 2 * (1 - t) * t * my + t * t * y1]; }
+      var a = P(t0), b = P(t1); g.strokeStyle = '#4a3226'; g.lineCap = 'round'; g.lineWidth = w0 + (w1 - w0) * t0; g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+      g.strokeStyle = 'rgba(160,130,100,.45)'; g.lineWidth = Math.max(1, (w0 + (w1 - w0) * t0) * 0.2); g.beginPath(); g.moveTo(a[0] - 2, a[1]); g.lineTo(b[0] - 2, b[1]); g.stroke(); }
+    return [x1, y1]; }
+  function tree(x, y, s, flip) { var f = flip ? -1 : 1, tops = [];
+    var t1 = limb(x, y, x + f * 40 * s, y - 180 * s, 34 * s, 22 * s, -30 * f * s);
+    tops.push(limb(t1[0], t1[1], t1[0] - f * 220 * s, t1[1] - 120 * s, 20 * s, 6 * s, 40 * s)); tops.push(limb(t1[0], t1[1], t1[0] + f * 260 * s, t1[1] - 90 * s, 18 * s, 6 * s, -50 * s));
+    tops.push(limb(t1[0], t1[1], t1[0] + f * 30 * s, t1[1] - 200 * s, 16 * s, 5 * s, 20 * s)); tops.push(limb(t1[0] - f * 110 * s, t1[1] - 60 * s, t1[0] - f * 330 * s, t1[1] - 10 * s, 9 * s, 3 * s, 30 * s));
+    tops.push(limb(t1[0] + f * 140 * s, t1[1] - 50 * s, t1[0] + f * 380 * s, t1[1] - 10 * s, 9 * s, 3 * s, -20 * s));
+    g.strokeStyle = 'rgba(60,40,30,.5)'; g.lineWidth = 1.5; for (var k = 0; k < 6; k++) { g.beginPath(); g.ellipse(x + f * (10 + k * 6) * s, y - (30 + k * 25) * s, 6 * s, 3 * s, 0.4, 0, TAU); g.stroke(); }   // 樹瘤
+    blossomCloud(t1[0] - f * 120 * s, t1[1] - 110 * s, 190 * s, 80 * s, 900 * s); blossomCloud(t1[0] + f * 160 * s, t1[1] - 90 * s, 210 * s, 75 * s, 900 * s); blossomCloud(t1[0] + f * 20 * s, t1[1] - 190 * s, 150 * s, 60 * s, 600 * s);
+    blossomCloud(t1[0] - f * 300 * s, t1[1] - 20 * s, 80 * s, 40 * s, 260 * s); blossomCloud(t1[0] + f * 360 * s, t1[1] - 20 * s, 80 * s, 40 * s, 260 * s); }
+  tree(1470, 470, 1.15, false); tree(330, 520, 0.75, true); tree(2280, 540, 0.7, false);
+  // ---- 杏壇：石砌高台、欄杆、台階 ----
+  var TX = 1280, TY = 470, TW = 760;
+  g.fillStyle = '#b8ab92'; g.beginPath(); g.moveTo(TX - TW / 2, TY); g.lineTo(TX + TW / 2, TY); g.lineTo(TX + TW / 2 + 40, TY + 60); g.lineTo(TX - TW / 2 - 40, TY + 60); g.closePath(); g.fill(); g.strokeStyle = INK; g.lineWidth = 2; g.stroke();
+  g.fillStyle = '#d4c8ae'; g.fillRect(TX - TW / 2 - 40, TY + 60, TW + 80, 34); g.strokeRect(TX - TW / 2 - 40, TY + 60, TW + 80, 34);
+  g.strokeStyle = 'rgba(60,50,40,.45)'; g.lineWidth = 1; for (x = TX - TW / 2 - 40; x < TX + TW / 2 + 40; x += 46) { g.beginPath(); g.moveTo(x, TY + 60); g.lineTo(x, TY + 94); g.stroke(); }
+  for (i = 0; i < 4; i++) { g.fillStyle = i % 2 ? '#cfc3a8' : '#c2b598'; g.fillRect(TX - 90 - i * 12, TY + 94 + i * 12, 180 + i * 24, 12); g.strokeStyle = INK; g.strokeRect(TX - 90 - i * 12, TY + 94 + i * 12, 180 + i * 24, 12); }
+  g.strokeStyle = '#8a2a1e'; g.lineWidth = 4; g.beginPath(); g.moveTo(TX - TW / 2, TY - 40); g.lineTo(TX - 110, TY - 40); g.moveTo(TX + 110, TY - 40); g.lineTo(TX + TW / 2, TY - 40); g.stroke();
+  for (x = TX - TW / 2; x <= TX + TW / 2; x += 50) { if (Math.abs(x - TX) < 100) continue; g.fillStyle = '#8a2a1e'; g.fillRect(x - 3, TY - 46, 6, 46); g.fillStyle = '#d8a840'; g.beginPath(); g.arc(x, TY - 48, 4, 0, TAU); g.fill(); }
+  g.strokeStyle = 'rgba(138,42,30,.6)'; g.lineWidth = 2; for (x = TX - TW / 2; x < TX + TW / 2; x += 50) { if (Math.abs(x + 25 - TX) < 110) continue; g.beginPath(); g.moveTo(x, TY - 10); g.lineTo(x + 25, TY - 30); g.lineTo(x + 50, TY - 10); g.stroke(); }
+  // 石碑「杏壇」
+  g.fillStyle = '#8a8070'; g.fillRect(TX - TW / 2 + 20, TY - 120, 50, 110); g.strokeStyle = INK; g.strokeRect(TX - TW / 2 + 20, TY - 120, 50, 110);
+  g.fillStyle = '#3a2a1e'; g.font = 'bold 30px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('杏', TX - TW / 2 + 45, TY - 90); g.fillText('壇', TX - TW / 2 + 45, TY - 52);
+  // ---- 人物 ----
+  function face(x, y, r, o) { g.fillStyle = '#efd2b0'; g.beginPath(); g.ellipse(x, y, r * 0.86, r, 0, 0, TAU); g.fill(); g.strokeStyle = INK; g.lineWidth = 1; g.stroke();
+    var d = o.dir || 1; g.strokeStyle = 'rgba(40,28,20,.9)'; g.lineWidth = Math.max(1, r * 0.09);
+    g.beginPath(); g.moveTo(x + d * r * 0.05, y - r * 0.05); g.lineTo(x + d * r * 0.4, y - r * 0.08); g.stroke(); if (r > 9) { g.beginPath(); g.moveTo(x - d * r * 0.35, y - r * 0.08); g.lineTo(x - d * r * 0.05, y - r * 0.05); g.stroke(); }
+    g.fillStyle = '#1e1814'; g.beginPath(); g.ellipse(x - d * r * 0.1, y - r * 0.55, r * 0.85, r * 0.55, 0, Math.PI, TAU); g.fill();
+    if (o.cap) { g.fillStyle = o.cap; g.fillRect(x - r * 0.35 - d * r * 0.1, y - r * 1.4, r * 0.6, r * 0.5); g.fillStyle = '#d8a840'; g.fillRect(x - r * 0.6 - d * r * 0.1, y - r * 1.15, r * 1.1, r * 0.08); }
+    else { g.fillStyle = '#1e1814'; g.beginPath(); g.arc(x - d * r * 0.15, y - r * 1.12, r * 0.38, 0, TAU); g.fill(); if (o.band) { g.fillStyle = o.band; g.fillRect(x - d * r * 0.15 - r * 0.4, y - r * 1.02, r * 0.8, r * 0.14); } }
+    if (o.beard) { g.fillStyle = o.beardCol || '#2a2420'; g.beginPath(); g.moveTo(x - r * 0.3 + d * r * 0.1, y + r * 0.5); g.quadraticCurveTo(x + d * r * 0.15, y + r * (o.beard), x + d * r * 0.3, y + r * 0.5); g.fill(); } }
+  function robePath(pts) { g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (var k = 1; k < pts.length; k++) { var a = pts[k - 1], b = pts[k]; g.quadraticCurveTo(a[0], a[1], (a[0] + b[0]) / 2, (a[1] + b[1]) / 2); } g.lineTo(pts[pts.length - 1][0], pts[pts.length - 1][1]); g.closePath(); }
+  function folds(x0, y0, x1, y1, n) { g.strokeStyle = 'rgba(40,28,20,.45)'; g.lineWidth = 1; for (var k = 0; k < n; k++) { var t = (k + 1) / (n + 1), xa = x0 + (x1 - x0) * t; g.beginPath(); g.moveTo(xa + (R() - 0.5) * 4, y0); g.quadraticCurveTo(xa + (R() - 0.5) * 10, (y0 + y1) / 2, xa + (R() - 0.5) * 8, y1); g.stroke(); } }
+  /* person(x: feet center, y: ground, s: height px, pose, colors, dir: 1 faces right) */
+  function person(x, y, s, pose, col, dir, extra) {
+    extra = extra || {}; var d = dir, hr = s * 0.075, body = col[0], trim = col[1] || '#2a2a3a', inner = '#efe8d6';
+    g.lineJoin = 'round';
+    if (pose === 'stand' || pose === 'scroll' || pose === 'bow') {
+      var top = y - s * 0.82, lean = pose === 'bow' ? d * s * 0.06 : 0;
+      robePath([[x - s * 0.17, y], [x - s * 0.13, y - s * 0.4], [x - s * 0.12 + lean, top + s * 0.12], [x + lean, top], [x + s * 0.12 + lean, top + s * 0.12], [x + s * 0.13, y - s * 0.4], [x + s * 0.19, y]]);
+      g.fillStyle = body; g.fill(); g.strokeStyle = INK; g.lineWidth = 1.4; g.stroke();
+      folds(x - s * 0.12, y - s * 0.38, x + s * 0.12, y, 4);
+      g.fillStyle = trim; g.fillRect(x - s * 0.18, y - s * 0.03, s * 0.37, s * 0.03);
+      g.strokeStyle = inner; g.lineWidth = Math.max(1.5, s * 0.02); g.beginPath(); g.moveTo(x - s * 0.06 + lean, top + s * 0.04); g.lineTo(x + lean + d * s * 0.02, top + s * 0.18); g.lineTo(x + s * 0.06 + lean, top + s * 0.04); g.stroke();
+      g.fillStyle = trim; g.fillRect(x - s * 0.12 + lean * 0.6, y - s * 0.5, s * 0.25, s * 0.035);   // sash
+      // sleeves joined in front (拱手) or holding a scroll
+      var sx = x + d * s * 0.1 + lean, sy = y - s * 0.56;
+      g.fillStyle = body; g.beginPath(); g.ellipse(sx, sy, s * 0.1, s * 0.13, d * 0.3, 0, TAU); g.fill(); g.strokeStyle = INK; g.lineWidth = 1.2; g.stroke();
+      g.fillStyle = trim; g.beginPath(); g.ellipse(sx + d * s * 0.06, sy - s * 0.02, s * 0.03, s * 0.06, 0, 0, TAU); g.fill();
+      if (pose === 'scroll') { g.fillStyle = '#e8d8a8'; g.fillRect(sx + d * s * 0.05 - (d < 0 ? s * 0.16 : 0), sy - s * 0.1, s * 0.16, s * 0.1); g.strokeStyle = INK; g.lineWidth = 1; g.strokeRect(sx + d * s * 0.05 - (d < 0 ? s * 0.16 : 0), sy - s * 0.1, s * 0.16, s * 0.1);
+        g.strokeStyle = 'rgba(40,28,20,.6)'; for (var k = 1; k < 5; k++) { var lx = sx + d * s * 0.05 - (d < 0 ? s * 0.16 : 0) + k * s * 0.032; g.beginPath(); g.moveTo(lx, sy - s * 0.09); g.lineTo(lx, sy - s * 0.02); g.stroke(); } }
+      face(x + lean + d * s * 0.01, top - hr * 0.95, hr, { dir: d, cap: extra.cap, beard: extra.beard, band: extra.band });
+    } else {   // 'sit' cross-legged or 'kneel'
+      var kn = pose === 'kneel', bw = kn ? s * 0.28 : s * 0.38, top2 = y - s * 0.5;
+      g.fillStyle = extra.mat || 'rgba(170,140,90,.6)'; g.beginPath(); g.ellipse(x, y + s * 0.02, bw * 0.75, s * 0.05, 0, 0, TAU); g.fill();
+      robePath([[x - bw / 2, y], [x - bw * 0.45, y - s * 0.12], [x - s * 0.13, y - s * 0.2], [x - s * 0.12, top2 + s * 0.1], [x, top2], [x + s * 0.12, top2 + s * 0.1], [x + s * 0.13, y - s * 0.2], [x + bw * 0.45, y - s * 0.12], [x + bw / 2, y]]);
+      g.fillStyle = body; g.fill(); g.strokeStyle = INK; g.lineWidth = 1.4; g.stroke(); folds(x - bw * 0.4, y - s * 0.15, x + bw * 0.4, y, 5);
+      g.strokeStyle = inner; g.lineWidth = Math.max(1.5, s * 0.02); g.beginPath(); g.moveTo(x - s * 0.06, top2 + s * 0.04); g.lineTo(x + d * s * 0.02, top2 + s * 0.18); g.lineTo(x + s * 0.06, top2 + s * 0.04); g.stroke();
+      g.fillStyle = trim; g.fillRect(x - s * 0.12, y - s * 0.27, s * 0.25, s * 0.03);
+      var hx = x + d * s * 0.06, hy = y - s * 0.22;
+      g.fillStyle = body; g.beginPath(); g.ellipse(hx, hy, s * 0.12, s * 0.08, 0, 0, TAU); g.fill(); g.strokeStyle = INK; g.lineWidth = 1.2; g.stroke();
+      if (extra.book !== false) { g.fillStyle = R() < 0.5 ? '#d8b878' : '#e8dcb8'; g.save(); g.translate(hx + d * s * 0.04, hy - s * 0.06); g.rotate(-d * 0.25); g.fillRect(-s * 0.08, -s * 0.03, s * 0.16, s * 0.06); g.strokeStyle = INK; g.lineWidth = 0.8; g.strokeRect(-s * 0.08, -s * 0.03, s * 0.16, s * 0.06); g.restore(); }
+      face(x + d * s * 0.01, top2 - hr * 0.95, hr, { dir: d, cap: extra.cap, beard: extra.beard, band: extra.band });
+    } }
+  // ---- 孔子：台上撫琴講學（刻意畫大） ----
+  var CX = TX - 30, CY = TY - 4, CS = 290;
+  g.fillStyle = '#6a2a1e'; g.fillRect(CX - 130, CY - 150, 260, 150); g.strokeStyle = '#d8a840'; g.lineWidth = 4; g.strokeRect(CX - 124, CY - 144, 248, 138);   // 背屏
+  for (i = 0; i < 5; i++) { g.strokeStyle = 'rgba(216,168,64,.5)'; g.lineWidth = 2; g.beginPath(); g.arc(CX - 90 + i * 45, CY - 90, 14, 0, TAU); g.stroke(); }
+  person(CX, CY, CS, 'sit', ['#3a3a52', '#9a2a1e'], 1, { cap: '#1e1e2a', beard: 2.6, mat: 'rgba(140,40,30,.7)', book: false });
+  g.fillStyle = '#5a3424'; g.fillRect(CX + 40, CY - 60, 170, 14); g.fillRect(CX + 52, CY - 46, 8, 42); g.fillRect(CX + 190, CY - 46, 8, 42);   // 案
+  g.fillStyle = '#3a2418'; g.beginPath(); g.moveTo(CX + 50, CY - 62); g.lineTo(CX + 205, CY - 66); g.lineTo(CX + 205, CY - 74); g.quadraticCurveTo(CX + 120, CY - 80, CX + 50, CY - 70); g.fill();   // 琴
+  g.strokeStyle = '#e8d8a8'; g.lineWidth = 0.8; for (i = 0; i < 7; i++) { g.beginPath(); g.moveTo(CX + 58, CY - 64 - i * 1.1); g.lineTo(CX + 200, CY - 68 - i * 1.1); g.stroke(); }
+  g.fillStyle = '#e8d8a8'; g.fillRect(CX - 150, CY - 40, 50, 30); g.strokeStyle = INK; g.strokeRect(CX - 150, CY - 40, 50, 30);   // 竹簡
+  // 侍立於台上的弟子
+  var robes = [['#4a6a8a', '#2a3a52'], ['#6a7a5a', '#3a4a2a'], ['#8a5a3a', '#4a2a1a'], ['#5a6a7a', '#2a3a4a'], ['#7a6a4a', '#3a2a1a'], ['#8a4a42', '#3a1a16'], ['#5a7a72', '#2a4a42'], ['#9a8a6a', '#4a3a2a'], ['#3a5a7a', '#a8322a']];
+  var placed = 1;
+  function P2(x, y, s, pose, d, ex) { if (placed >= 70) return; person(x, y, s, pose, robes[Math.floor(R() * robes.length)], d, ex); placed++; }
+  P2(TX - 260, TY - 4, 150, 'bow', 1, { beard: 1.4 }); P2(TX - 200, TY - 2, 140, 'stand', 1, {}); P2(TX + 250, TY - 2, 145, 'scroll', -1, {}); P2(TX + 310, TY - 4, 150, 'bow', -1, { beard: 1.3 });
+  // 台下弟子：自然散布、三五成群，愈近愈大；先算位置再由遠而近畫
+  var spots = [], tries = 0;
+  while (spots.length < 66 && tries < 6000) { tries++;
+    var sy2 = 545 + Math.pow(R(), 0.8) * 225, sx2 = 60 + R() * (W - 300);
+    if (sy2 < 625 && Math.abs(sx2 - TX) < TW / 2 + 70) continue; if (Math.abs(sx2 - TX) < 140 && sy2 < 660) continue;
+    var sc2 = 92 + (sy2 - 545) * 0.22, ok = true;
+    for (var q = 0; q < spots.length; q++) { var o = spots[q]; if (Math.abs(o.x - sx2) < (o.s + sc2) * 0.24 && Math.abs(o.y - sy2) < (o.s + sc2) * 0.16) { ok = false; break; } }
+    if (ok) spots.push({ x: sx2, y: sy2, s: sc2 }); }
+  spots.sort(function (a, b) { return a.y - b.y; });
+  spots.forEach(function (sp) { var d = sp.x < TX ? 1 : -1, far = sp.y < 620, r = R(), pose = far ? (r < 0.45 ? 'stand' : r < 0.75 ? 'bow' : 'scroll') : (r < 0.45 ? 'sit' : r < 0.75 ? 'kneel' : r < 0.88 ? 'stand' : 'scroll'), ex = {};
+    if (R() < 0.3) ex.beard = 1.2 + R() * 0.6; if (R() < 0.25) ex.cap = '#2a2a32'; if (R() < 0.15) ex.band = '#3a5a8a'; if (R() < 0.15) d = -d;
+    P2(sp.x, sp.y, sp.s * (0.94 + R() * 0.12), pose, d, ex); });
+  // ---- 前景：落英、石、題款 ----
+  for (i = 0; i < 220; i++) { var px = R() * W, py = 90 + R() * (H - 90); g.fillStyle = R() < 0.5 ? 'rgba(248,214,222,.9)' : 'rgba(255,240,240,.9)'; g.beginPath(); g.ellipse(px, py, 3, 2, R() * 3, 0, TAU); g.fill(); }
+  function rock(x, y, s) { g.fillStyle = '#9a9a88'; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + 10 * s, y - 60 * s, x + 50 * s, y - 70 * s); g.quadraticCurveTo(x + 100 * s, y - 50 * s, x + 110 * s, y); g.closePath(); g.fill(); g.strokeStyle = INK; g.lineWidth = 1.5; g.stroke();
+    g.strokeStyle = 'rgba(40,40,30,.5)'; for (var k = 0; k < 5; k++) { g.beginPath(); g.moveTo(x + 20 * s + k * 15 * s, y - 50 * s + k * 4 * s); g.lineTo(x + 26 * s + k * 15 * s, y - 15 * s); g.stroke(); }
+    g.fillStyle = 'rgba(80,120,70,.6)'; g.beginPath(); g.ellipse(x + 50 * s, y - 66 * s, 30 * s, 6 * s, 0, 0, TAU); g.fill(); }
+  rock(0, H, 1.2); rock(W - 150, H, 1.3);
+  // 題款與印章
+  g.fillStyle = '#2a1a12'; g.font = 'bold 64px ' + FONT; g.textAlign = 'center'; g.textBaseline = 'middle';
+  var title = '杏壇講學圖'; for (i = 0; i < title.length; i++) g.fillText(title[i], W - 70, 90 + i * 70);
+  g.font = '26px ' + FONT; var colo = '孔子設教於杏壇弟子三千賢者七十二'; for (i = 0; i < colo.length; i++) { var col = Math.floor(i / 9); g.fillText(colo[i], W - 140 - col * 34, 96 + (i % 9) * 32); }
+  function seal(x, y, s, t2) { g.fillStyle = '#b02a22'; g.fillRect(x, y, s, s); g.fillStyle = '#f6e2c8'; g.font = 'bold ' + (s * 0.4) + 'px ' + FONT; g.fillText(t2[0], x + s * 0.5, y + s * 0.3); g.fillText(t2[1], x + s * 0.5, y + s * 0.72); }
+  seal(W - 100, 450, 60, ['尼', '山']); seal(W - 180, 400, 46, ['講', '學']); seal(40, 60, 56, ['杏', '壇']);
+  // 裱邊暈染
+  var vg = g.createRadialGradient(W / 2, H / 2, H * 0.6, W / 2, H / 2, W * 0.62); vg.addColorStop(0, 'rgba(120,90,50,0)'); vg.addColorStop(1, 'rgba(120,90,50,.28)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  g.restore();
+  return placed;
+}
+
+
 /* 3. 七十二賢廊  z -20→-125, y 45, h 16 */
 loadMsg.textContent='塑造七十二賢…';
 room({cx:X,cz:-72.5,w:26,d:105,y0:45,h:16,wall:0x5e3424,floor:0x7a5a3c,ceil:0x3a2414,roof:0x4c5058,roofH:9,s:'open',n:{w:7,h:9}});
@@ -5483,20 +5624,18 @@ room({cx:X,cz:-72.5,w:26,d:105,y0:45,h:16,wall:0x5e3424,floor:0x7a5a3c,ceil:0x3a
   tag(im,'dougong');scene.add(im);
   /* 燈帶 */
   box(0.4,0.3,104,M(0xffe2a0,{emissive:0xffc060}),X-12.6,59,-72.5);box(0.4,0.3,104,M(0xffe2a0,{emissive:0xffc060}),X+12.6,59,-72.5);
-  /* 杏壇講學圖 */
-  var t=ctex(1400,440,function(g,w,h){
-    var gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#e9dcc0');gr.addColorStop(1,'#cdb98f');g.fillStyle=gr;g.fillRect(0,0,w,h);
-    var i,x,y;g.fillStyle='rgba(240,170,190,.75)';for(i=0;i<60;i++){g.beginPath();g.arc(560+Math.cos(i*2.4)*200*Math.random(),90+Math.sin(i*1.7)*60*Math.random(),18+Math.random()*16,0,7);g.fill();}
-    g.fillStyle='#5a3a2a';g.fillRect(650,120,22,170);
-    g.fillStyle='#8a7350';g.fillRect(560,290,220,20);
-    g.fillStyle='#6a2a20';g.beginPath();g.moveTo(662,180);g.lineTo(625,300);g.lineTo(700,300);g.fill();g.fillStyle='#e0c09a';g.beginPath();g.arc(662,168,16,0,7);g.fill();
-    var c=['#4a5a6a','#6a4a3a','#5a6a4a','#7a5a3a','#3a4a5a'];
-    for(i=0;i<70;i++){var row=Math.floor(i/14),col=i%14;x=60+col*96+(row%2)*40;y=320+row*22;if(Math.abs(x-662)<90&&row<2)x+=180;
-      var sc=0.55+row*0.12;g.fillStyle=c[i%5];g.beginPath();g.moveTo(x,y-28*sc);g.lineTo(x-12*sc,y+10*sc);g.lineTo(x+12*sc,y+10*sc);g.fill();
-      g.fillStyle='#d8b890';g.beginPath();g.arc(x,y-32*sc,6*sc,0,7);g.fill();}
-    g.fillStyle='#8a2a22';g.font='bold 34px '+FONT;g.textAlign='left';vtext(g,'杏壇講學',w-30,30,34,4,10);
-  });
-  tag(plane(24,7.4,t,X,56.6,-124.6,0,0.15),'mural');
+  /* 杏壇講學圖：工筆設色長卷（絹本、遠山雲氣、杏樹繁花、石砌杏壇、孔子撫琴講學、七十人），描金畫框與錦緞裱邊 */
+  var t=ctex(2560,790,function(g,w,h){paintXingtan(g,w,h,FONT);});t.anisotropy=8;
+  tag(plane(24,7.4,t,X,56.6,-124.6,0,0.12),'mural');
+  var brocade=ctex(256,64,function(g,w,h){g.fillStyle='#5a1e18';g.fillRect(0,0,w,h);g.strokeStyle='rgba(216,168,64,.7)';g.lineWidth=2;for(var x=0;x<w;x+=32){g.beginPath();g.arc(x+16,h/2,10,0,6.3);g.stroke();g.beginPath();g.moveTo(x+16,h/2-10);g.lineTo(x+16,h/2+10);g.moveTo(x+6,h/2);g.lineTo(x+26,h/2);g.stroke();}});
+  brocade.wrapS=brocade.wrapT=THREE.RepeatWrapping;
+  var bm=new THREE.MeshLambertMaterial({map:brocade}),fg=M(0xd9a83a,{emissive:0x3a2600});
+  [[24.9,0.45,0,4.0],[24.9,0.45,0,-4.0]].forEach(function(b){var bb=brocade.clone();bb.needsUpdate=true;bb.repeat.set(24,1);var m=new THREE.Mesh(new THREE.PlaneGeometry(b[0],b[1]),new THREE.MeshLambertMaterial({map:bb}));m.position.set(X+b[2],56.6+b[3]-Math.sign(b[3])*0.0,-124.62);tag(m,'mural');scene.add(m);});
+  [[-12.2],[12.2]].forEach(function(b){var bb=brocade.clone();bb.needsUpdate=true;bb.repeat.set(8,1);var m=new THREE.Mesh(new THREE.PlaneGeometry(8.4,0.45),new THREE.MeshLambertMaterial({map:bb}));m.rotation.z=Math.PI/2;m.position.set(X+b[0],56.6,-124.62);tag(m,'mural');scene.add(m);});
+  box(25.6,0.35,0.35,fg,X,56.6+4.4,-124.5);box(25.6,0.35,0.35,fg,X,56.6-4.4,-124.5);box(0.35,9.15,0.35,fg,X-12.65,56.6,-124.5);box(0.35,9.15,0.35,fg,X+12.65,56.6,-124.5);
+  for(var ci=-1;ci<=1;ci+=2)for(var cj=-1;cj<=1;cj+=2){var cb=new THREE.Mesh(new THREE.SphereGeometry(0.32,12,8),fg);cb.position.set(X+ci*12.65,56.6+cj*4.4,-124.4);scene.add(cb);}
+  /* 投射燈 */
+  for(var li=-1;li<=1;li++){var sl=new THREE.SpotLight(0xfff0d0,1.1,26,0.55,0.6);sl.position.set(X+li*8,61.5,-117);sl.target.position.set(X+li*8,56,-124.6);scene.add(sl);scene.add(sl.target);}
   /* 先秦青鳥 */
   var gold=M(0xe0b040,{emissive:0x3a2600});var bd=bird(gold,1.4);bd.position.set(X,56,-70);bd.rotation.y=Math.PI;tag(bd,'qingniao');scene.add(bd);PROC.qingniao.push(bd);
   cyl(0.04,0.04,4.5,4,M(0x333333),X,58.6,-70);
@@ -6097,7 +6236,7 @@ var INFO={
  gaoshan:{t:'高山仰止',x:'取自《史記》的典故，表達對孔子如仰望高山般的景仰。',s:8},
  sages:{t:'七十二賢泥塑',x:'雕刻大師<b>歐陽寧明</b>以山西礦物泥塑創作，共 <b>30 組、72 尊</b>，每尊高 3 至 4 公尺。導覽中以顏回（盤坐讀簡）、子路（持劍武士）、子貢（華服論說）、曾子（跪坐書寫）四種造型象徵，台座前刻有弟子姓名，點塑像或名牌可看名字。',s:9},
  dougong:{t:'鎏金做舊斗拱',x:'七十二賢廊的天花以鎏金做舊斗拱配合燈光鋪陳，長廊高 16 公尺，宛如金鑾殿。',s:9},
- mural:{t:'杏壇講學圖',x:'西安美院<b>何軍</b>團隊繪製。畫中實繪 70 人，遠處孔子刻意畫大；加上畫前駐足的參觀者，湊成 72 人的意象。',s:10},
+ mural:{t:'杏壇講學圖',x:'西安美院<b>何軍</b>團隊繪製。畫中實繪 70 人，遠處孔子刻意畫大；加上畫前駐足的參觀者，湊成 72 人的意象。導覽中以工筆設色重繪：絹本古色、遠山雲氣、三株杏樹繁花、石砌杏壇與朱欄，孔子坐於屏前撫琴講學，弟子或立或坐、或拱手或執簡，環列壇下，共 70 人。',s:10},
  qingniao:{t:'鎏金先秦青鳥',x:'懸掛在廊頂上方的鎏金青鳥（鸞鳥）。',s:10},
  liCaisson:{t:'八角疊層藻井・朱雀',x:'禮廳頂部是層層向內收斂的八角疊層藻井，中心繪有守護神獸<b>朱雀</b>。',s:11},
  liScroll:{t:'周代禮樂長卷',x:'長卷式組合繪畫，描摹周代<b>婚宴、禮儀、歌舞、祭祀、朝會</b>等禮樂秩序場景。',s:11},
