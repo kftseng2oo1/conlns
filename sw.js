@@ -1,6 +1,6 @@
 /* 尼山大學堂 3D 導覽 — Service Worker
    更新時只要改 CACHE 版本號，使用者會看到「有新版本」提示 */
-var CACHE = 'conlns-v15';
+var CACHE = 'conlns-v16';
 var CORE = ['./', './index.html', './icon.svg', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
