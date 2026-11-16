@@ -4806,11 +4806,12 @@ function makeApricot(THREE, opt) {
 }
 
 /* 三千杏樹：依真實杏樹，枝條層層分岔、白花綴枝、整棵通透。近處用精細枝幹＋花枝卡片，遠處用手繪通透樹冠；隨鏡頭移動自動切換。點樹會搖動並落下杏花 */
+var XT={x:-27,z:121};
 var apricot=(function(){
   var A=makeApricot(THREE,{seed:23,lite:true}),N=3000,NEAR=160,R2=45*45,trees=[],i,x,z,y,s;
   var rnd=(function(){var q=7;return function(){q=(q*16807)%2147483647;return q/2147483647;};})();
   var tints=[0xffffff,0xfff0f3,0xffe6ec,0xfff7f2,0xffeaf0];
-  for(i=0;i<N;i++){var side=i%2?1:-1;x=side*(11+rnd()*72);z=82+rnd()*132;y=avenueY(z);s=(0.8+rnd()*0.5)*1.35;trees.push({x:x,y:y,z:z,s:s,ry:rnd()*6.283,c:tints[i%5],shake:0});}
+  for(i=0;i<N;i++){var side=i%2?1:-1;x=side*(11+rnd()*72);z=82+rnd()*132;if((x-XT.x)*(x-XT.x)+(z-XT.z)*(z-XT.z)<110)x-=22;y=avenueY(z);s=(0.8+rnd()*0.5)*1.35;trees.push({x:x,y:y,z:z,s:s,ry:rnd()*6.283,c:tints[i%5],shake:0});}
   function IM(g,m,n){var o=new THREE.InstancedMesh(g,m,n);o.frustumCulled=false;o.userData.noCollide=true;o.userData.apricot=true;tag(o,'apricot');scene.add(o);return o;}
   var nT=IM(A.trunk,A.barkMat,NEAR),nS=IM(A.sprays,A.sprayMat,NEAR),fT=IM(A.farTrunk,A.barkMat,N),fB=IM(A.farCrown,A.crownMat,N);
   var nearIdx=[],farIdx=[],slotOf=new Int32Array(N).fill(-1),d=new THREE.Object3D(),col=new THREE.Color(),last=new THREE.Vector3(1e9,0,0),acc=1;
@@ -5312,6 +5313,7 @@ var INFO={
  plaque:{t:'「德侔天地」匾額',x:'懸於宮殿式大門正上方，稱頌孔子的德行可與天地相匹。',s:1},
  gate:{t:'宮殿式大門',x:'大門構件規模龐大，堪比皇宮宮門，是整條朝聖動線的起點。',s:1},
  avenue:{t:'天命大道',x:'通往主體建築的神道全以<b>精磨花崗岩</b>鋪設，共 <b>260 個台階</b>。',s:2},
+ xingtan:{t:'杏壇講學',x:'孔子在杏壇講學、弟子環坐的場景。點任何一位弟子，會演出一段《論語》裡的問答；點孔子會頷首並說一句論語。',s:3},
  apricot:{t:'杏樹',x:'大道兩側共 <b>3,000 棵</b>杏樹，象徵孔門三千弟子，造價約三、四百萬。',s:3},
  statue:{t:'孔子巨型銅像',x:'高 <b>72 公尺</b>（象徵七十二賢），耗用約 150 噸黃銅；造形取自唐代吳道子〈先師孔子行教像〉，由吳顯林主持設計。',s:4},
  bronzeDoor:{t:'青銅巨門',x:'大學堂主入口，高十幾公尺的青銅大門，以「世界儒學中心」自我定位。',s:5},
@@ -5375,6 +5377,7 @@ function pick(cx,cy){
   var key=findInfo(h.object);
   if(!key){var z=zoneAt(h.point);if(z<0||h.object===groundMesh){hideInfo();return;}key='stop:'+z;}
   var bb=findBeast(h.object);if(bb)beastTap(bb,h.object);
+  var dsc=findDisciple(h.object);if(dsc)xingtan.ask(dsc);
   if(h.object.userData.apricot&&h.instanceId!==undefined)apricot.tap(h.object,h.instanceId);
   showInfo(key,h.point,h.distance);
 }
@@ -5771,7 +5774,8 @@ function beastSetup(key,inst,gltf,holder,idx){
     e.action.fadeOut(0.3);
     if(b.next){var n=b.next;b.next=null;b.busy=false;n();return;}
     A.Idle.reset().fadeIn(0.3).play();b.busy=false;});
-  mixers.push(mx);b.key=key;beasts[key+(idx?'#'+idx:'')]=b;holder.userData.beast=b;
+  mixers.push(mx);b.key=key;beasts[key+(idx?'#'+idx:'')]=b;holder.userData.beast=b;b.ringS=def.ringS||1;
+  if(def.init)def.init(b);
 }
 function beastPlay(b,name,loop,reps,force){
   var a=b.A[name];if(!a||(b.busy&&!force))return false;b.busy=true;
@@ -5781,10 +5785,12 @@ function beastPlay(b,name,loop,reps,force){
   return true;
 }
 function beastTap(b,obj){
+  if(b.def.countIdle&&b.busy)return;
   var n=obj,part=b.def.dflt;
   while(n&&n!==b.holder){var p=b.def.part(n.name||'');if(p){part=p;break;}n=n.parent;}
   b.taps++;
-  if(b.taps%5===0&&!b.busy){b.def.awaken(b);wxMark(b);return;}
+  var nAw=b.def.awakenTaps===undefined?5:b.def.awakenTaps;
+  if(nAw&&b.taps%nAw===0&&!b.busy){b.def.awaken(b);if(!b.def.noWx)wxMark(b);return;}
   var f=b.def.tap[part];if(f)f(b);
 }
 function beastsTick(dt){
@@ -5792,12 +5798,12 @@ function beastsTick(dt){
   for(k in beasts){b=beasts[k];beastGaze(b,dt);beastApproach(b,dt);b.g=Math.max(0,b.g-dt*1.3);
     for(i=0;i<b.glowMats.length;i++)b.glowMats[i].emissiveIntensity=b.glowMats[i].userData.base*(1+b.g*2.2)+Math.sin(t*1.5)*0.04;
     for(i=0;i<b.eyes.length;i++)b.eyes[i].emissiveIntensity=b.eyes[i].userData.base*(1+b.g);
-    b.light.intensity=b.g*1.5;}
+    b.light.intensity=b.g*1.5;if(b.def.tick)b.def.tick(b,dt);}
   bsRingTick(dt);bsSparkTick(dt);wxTick(dt);
 }
 var _gv=new THREE.Vector3(),_gm=new THREE.Matrix4();
 function beastGaze(b,dt){
-  var dist=b.holder.position.distanceTo(camera.position),on=(!b.busy||!!b.hold)&&dist<40;
+  var dist=b.holder.position.distanceTo(camera.position),on=(!b.busy||!!b.hold)&&dist<(b.def.gazeR||40);
   b.gw+=((on?1:0)-b.gw)*Math.min(1,dt*2.5);
   for(var i=0;i<b.gaze.length;i++){var z=b.gaze[i],n=z.g.parent;
     n.updateWorldMatrix(true,false);_gm.copy(n.matrixWorld).invert();_gv.copy(camera.position).applyMatrix4(_gm).normalize();
@@ -5865,7 +5871,7 @@ function zhPhrase(tonic,vol){var t=zhIdx(tonic),n=2+Math.floor(Math.random()*2),
 /* 刮奏：由低到高掃過五聲音階，收在主音與其五度 */
 function zhGliss(tonic,vol){var i,v=vol||0.35;for(i=0;i<ZH_SCALE.length;i++)zhNote(ZH_SCALE[i],i*0.045,v*0.6);
   var t=zhIdx(tonic);zhNote(ZH_SCALE[t],0.75,v,true);zhNote(ZH_SCALE[Math.min(ZH_SCALE.length-1,t+3)],0.8,v*0.7,false);zhNote(ZH_SCALE[Math.max(0,t-5)]||ZH_SCALE[0],0.85,v*0.6,false);}
-var ZH_TONIC={xuanwu:ZH.A4,zhuque:ZH.G4,dragon:ZH.E4,tiger:ZH.D4,qilin:ZH.C4};
+var ZH_TONIC={xuanwu:ZH.A4,zhuque:ZH.G4,dragon:ZH.E4,tiger:ZH.D4,qilin:ZH.C4,confucius:ZH.C5,teacher:ZH.G4};
 /* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商，麒麟土＝宮） --- */
 var bsAC=null;
 function bsAudio(){if(!bsAC){try{bsAC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(bsAC&&bsAC.state==='suspended')bsAC.resume();return bsAC;}
@@ -5885,8 +5891,8 @@ function bsRing(b,col,delay){setTimeout(function(){
   if(!bsRingGeo)bsRingGeo=new THREE.RingGeometry(0.92,1,64);
   var m=new THREE.Mesh(bsRingGeo,new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.8,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
   m.rotation.x=-Math.PI/2;m.position.copy(b.holder.position);m.position.y+=0.06;m.userData.noCollide=true;m.raycast=function(){};
-  scene.add(m);bsRings.push({m:m,t:0});},delay||0);}
-function bsRingTick(dt){for(var i=bsRings.length-1;i>=0;i--){var r=bsRings[i];r.t+=dt;r.m.scale.setScalar(1+r.t*4.5);r.m.material.opacity=Math.max(0,0.8*(1-r.t/1.6));
+  scene.add(m);bsRings.push({m:m,t:0,s:b.ringS||1});},delay||0);}
+function bsRingTick(dt){for(var i=bsRings.length-1;i>=0;i--){var r=bsRings[i];r.t+=dt;r.m.scale.setScalar((1+r.t*4.5)*(r.s||1));r.m.material.opacity=Math.max(0,0.8*(1-r.t/1.6));
   if(r.t>1.6){scene.remove(r.m);r.m.material.dispose();bsRings.splice(i,1);}}}
 var SPK=300,bsSp=null;
 function bsSparkInit(){var g=new THREE.BufferGeometry(),pos=new Float32Array(SPK*3),col=new Float32Array(SPK*3);
@@ -5968,11 +5974,115 @@ var BEAST_DEFS={
       for(var k=0;k<6;k++)bsRing(b,k%2?0xffd36a:0xff5a20,k*220);bsBurst(b,80,1.2,1.2,1.2,0.5);
       b.next=function(){beastPlay(b,'Fly',THREE.LoopOnce,1,true);};}}
 };
+/* ===== 至聖先師：大道銅像（青銅，點擊回禮、目光相隨、作揖三次拜師入門）與杏壇講學 ===== */
+var LUNYU=[['學而時習之，不亦說乎？','學而'],['有朋自遠方來，不亦樂乎？','學而'],['溫故而知新，可以為師矣。','為政'],['學而不思則罔，思而不學則殆。','為政'],['知之為知之，不知為不知，是知也。','為政'],
+  ['三人行，必有我師焉。','述而'],['己所不欲，勿施於人。','衛靈公'],['君子坦蕩蕩，小人長戚戚。','述而'],['德不孤，必有鄰。','里仁'],['見賢思齊焉，見不賢而內自省也。','里仁'],
+  ['知者不惑，仁者不憂，勇者不懼。','子罕'],['歲寒，然後知松柏之後彫也。','子罕'],['君子和而不同，小人同而不和。','子路'],['工欲善其事，必先利其器。','衛靈公'],['人無遠慮，必有近憂。','衛靈公'],['敏而好學，不恥下問。','公冶長']];
+var lyIdx=Math.floor(Math.random()*LUNYU.length);
+function sageSay(text,src,ms){$('hint').innerHTML=text+(src?'<br><small style="opacity:.75">《論語・'+src+'》</small>':'');$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,ms||5500);}
+function sageQuote(delay){setTimeout(function(){var q=LUNYU[lyIdx++%LUNYU.length];sageSay(q[0],q[1]);try{speak(q[0]);}catch(e){}},delay||600);}
+function speakNow(t){if(!window.speechSynthesis)return;try{speakId++;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.lang='zh-TW';var vv=pickVoice();if(vv)u.voice=vv;u.rate=0.95;speechSynthesis.speak(u);}catch(e){}}
+var SAGE_PAL={
+  bronze:{robe:[0x86643c],inner:[0x8e6c44],trim:[0x664a2a,0x3a2a12],sash:[0x6e5030],skin:[0xa07c50],beard:[0x5e4428],hat:[0x5e4428],gold:[0xb08848],eye_ink:[0x3a2a18],scroll:[0xa88a5c],jade:[0x5a7a58]},
+  awake:{robe:[0x2c3a7c],inner:[0xf2eadc],trim:[0xe2b44a,0xffd88a],sash:[0xb03228],skin:[0xf0c8a2],beard:[0x1e2442],hat:[0x1e2442],gold:[0xffd060],eye_ink:[0x101020],scroll:[0xffffff],jade:[0x40d0a0]}};
+var DISCIPLE_KEY='conlns-disciple';
+function sageParts(n){if(/^(Head$|Neck$|Beard$)/.test(n))return 'head';if(/^(UpperArm|Forearm|Hand|Sleeve|Scroll)/.test(n))return 'hands';if(/^(Torso$|Body$)/.test(n))return 'body';return null;}
+var _ca=new THREE.Color(),_cb=new THREE.Color();
+function sagePalette(b,k){for(var i=0;i<b.pal.length;i++){var m=b.pal[i],a=SAGE_PAL.bronze[m.name],c=SAGE_PAL.awake[m.name];if(!a)continue;
+  m.color.copy(_ca.setHex(a[0]).lerp(_cb.setHex(c[0]),k));if(a[1]!==undefined&&m.emissive)m.emissive.copy(_ca.setHex(a[1]).lerp(_cb.setHex(c[1]),k));
+  if(m.name!=='gold'){m.metalness=0.2*(1-k);m.roughness=0.45+0.3*k;}}}
+var SAGE_DEFS={
+  confucius:{gaze:['Head'],gazeR:420,nearR:42,awakenTaps:3,countIdle:true,noWx:true,ringS:7,glow:/^(trim|halo|gold)$/,glowColor:0xffd070,dflt:'body',part:sageParts,
+    init:function(b){var mc={};b.pal=[];
+      b.inst.traverse(function(o){if(!o.isMesh||Array.isArray(o.material))return;var m=o.material;if(!mc[m.uuid]){var c=m.clone();c.userData.base=m.userData.base;mc[m.uuid]=c;b.pal.push(c);}o.material=mc[m.uuid];});
+      b.glowMats=b.pal.filter(function(m){return b.def.glow.test(m.name);});b.eyes=[];
+      b.halo=b.inst.getObjectByName('Halo');b.awk=0;b.awkT=0;sagePalette(b,0);},
+    tick:function(b,dt){b.awkT=Math.max(0,b.awkT-dt);var tg=b.awkT>0?1:0;var k0=b.awk;b.awk+=(tg-b.awk)*Math.min(1,dt*(tg?0.9:0.35));
+      if(Math.abs(b.awk-k0)>1e-4||b.awk>0.001)sagePalette(b,b.awk);
+      if(b.halo&&!(b.A.Awaken&&b.A.Awaken.isRunning())){var hs=Math.max(0.001,b.awk);b.halo.scale.set(hs,hs,hs);b.halo.rotation.z+=dt*0.25;}
+      if(b.awk>0.4&&Math.random()<0.3)bsBurst(b,1,1.75,0.4,0.02,0.9);},
+    approach:function(b){if(beastPlay(b,'Teach'))sageSay('「來者可追」——孔子低頭俯視，向你伸出講學的手','',4000);},
+    tap:{head:function(b){if(beastPlay(b,'Nod'))sageQuote(500);},
+      hands:function(b){if(beastPlay(b,'Bow')){sageQuote(800);b.g=Math.max(b.g,1);var n=b.taps%3;if(n)setTimeout(function(){$('hint').innerHTML+='<br><small style="opacity:.75">作揖 '+n+'/3</small>';},900);}},
+      body:function(b){b.def.tap.hands(b);}},
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;b.awkT=50;
+      for(var k=0;k<6;k++)bsRing(b,k%2?0xffd36a:0xffb0c0,k*220);bsBurst(b,120,1.9,0.6,0.15,0.6);
+      var was=false;try{was=localStorage.getItem(DISCIPLE_KEY)==='1';localStorage.setItem(DISCIPLE_KEY,'1');}catch(e){}
+      var all=['xuanwu','zhuque','dragon','tiger','qilin'].every(function(k){return wxDone[k];});
+      setTimeout(function(){sageSay(all?'五行圓滿・拜入孔門<br>有朋自遠方來，不亦樂乎！':'拜師入門・成為孔門弟子'+(was?'':'<br><small style="opacity:.75">喚醒五獸後再來拜師，另有驚喜</small>'),'',6500);
+        speakNow(all?'五行圓滿，拜入孔門。有朋自遠方來，不亦樂乎。':'拜師入門，成為孔門弟子。');},1200);
+      if(all)setTimeout(function(){sageFinale(b);},1800);}}
+  ,teacher:{gaze:['Head'],gazeR:30,nearR:13,awakenTaps:0,noWx:true,glow:/^(trim|gold)$/,glowColor:0xffd070,dflt:'body',part:sageParts,
+    approach:function(b){if(beastPlay(b,'Teach'))sageSay('有朋自遠方來，不亦樂乎？','學而',4500);},
+    tap:{head:function(b){if(beastPlay(b,'Nod'))sageQuote(500);},hands:function(b){if(beastPlay(b,'Teach'))sageQuote(900);},body:function(b){if(beastPlay(b,'Bow'))sageQuote(800);}},
+    awaken:function(){}}
+};
+for(var _k in SAGE_DEFS)BEAST_DEFS[_k]=SAGE_DEFS[_k];
+/* 五獸齊醒後拜師：杏花滿天、兩段刮奏、五色光環 */
+function sageFinale(b){zhGliss(ZH.C4,0.4);setTimeout(function(){zhGliss(ZH.C5,0.32);},1400);
+  var cols=[0x3fd8b8,0xff5a20,0xffd36a,0xe8eeff,0x5a6aff],k;for(k=0;k<10;k++)bsRing(b,cols[k%5],k*200);
+  var p=b.holder.position,sc=b.inst.scale.x;
+  for(k=0;k<260;k++)(function(k){setTimeout(function(){var a=Math.random()*6.283,r=Math.random()*1.6*sc;
+    bsSpark(p.x+Math.cos(a)*r,p.y+(1.9+Math.random()*0.8)*sc,p.z+Math.sin(a)*r,(Math.random()-0.5)*0.12*sc,-(0.05+Math.random()*0.06)*sc,(Math.random()-0.5)*0.12*sc,1,0.78,0.86,4+Math.random()*2);},k*14);})(k);}
+
+/* 杏壇講學：杏林空地上的石壇，彩繪孔子與六位弟子；點弟子演出問答 */
+var XT_QA=[
+  ['顏淵','顏淵問仁。子曰：「克己復禮為仁。」','顏淵'],
+  ['子貢','子貢問政。子曰：「足食，足兵，民信之矣。」','顏淵'],
+  ['子路','子路問君子。子曰：「修己以敬。」','憲問'],
+  ['樊遲','樊遲問仁。子曰：「愛人。」問知。子曰：「知人。」','顏淵'],
+  ['子游','子游問孝。子曰：「今之孝者，是謂能養。至於犬馬，皆能有養；不敬，何以別乎？」','為政'],
+  ['子張','子張問仁。子曰：「能行五者於天下，為仁矣。」「恭、寬、信、敏、惠。」','陽貨']];
+function findDisciple(o){while(o&&o!==scene){if(o.userData&&o.userData.disciple)return o.userData.disciple;o=o.parent;}return null;}
+var xingtan=(function(){
+  var gy=avenueY(XT.z),H=0.55,root=new THREE.Group(),i,teacherB=null;root.position.set(XT.x,gy,XT.z);scene.add(root);
+  var stone=new THREE.MeshLambertMaterial({color:0xa69a86}),stone2=new THREE.MeshLambertMaterial({color:0x8a7e6a});
+  var base=new THREE.Mesh(new THREE.BoxGeometry(9,H,9),stone);base.position.y=H/2;root.add(base);
+  var lip=new THREE.Mesh(new THREE.BoxGeometry(9.4,0.12,9.4),stone2);lip.position.y=H+0.02;root.add(lip);
+  var st=new THREE.Mesh(new THREE.BoxGeometry(0.9,H*0.5,2.4),stone2);st.position.set(4.95,H*0.25,0);root.add(st);
+  /* 石碑「杏壇」朝向大道 */
+  var tt=ctex(256,512,function(g,w,h){g.fillStyle='#5a5246';g.fillRect(0,0,w,h);g.strokeStyle='#c8a860';g.lineWidth=8;g.strokeRect(14,14,w-28,h-28);
+    g.fillStyle='#f0d890';g.font='bold 170px '+FONT;g.textAlign='center';g.textBaseline='middle';g.fillText('杏',w/2,h*0.3);g.fillText('壇',w/2,h*0.68);});
+  var stele=new THREE.Mesh(new THREE.BoxGeometry(0.35,2.6,1.3),[new THREE.MeshLambertMaterial({map:tt}),stone2,stone2,stone2,stone2,stone2]);
+  stele.position.set(7.2,1.3,-3.6);root.add(stele);var sb=new THREE.Mesh(new THREE.BoxGeometry(0.8,0.4,1.8),stone2);sb.position.set(7.2,0.2,-3.6);root.add(sb);
+  /* 席地而坐的弟子 */
+  var skin=new THREE.MeshLambertMaterial({color:0xe6c29e}),hair=new THREE.MeshLambertMaterial({color:0x2a2624}),book=new THREE.MeshLambertMaterial({color:0xd8b878}),
+    robes=[0x9aa8b8,0xa8b4c0,0x8e9cae,0xb0b8c2,0x96a6b6,0xa2aebc],mats=[],ds=[],S1=new THREE.SphereGeometry(1,16,12);
+  function bl(p,m,x,y,z,sx,sy,sz){var o=new THREE.Mesh(S1,m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);p.add(o);return o;}
+  for(i=0;i<6;i++){var a=(-0.95+i*0.38),r=3.4,g=new THREE.Group(),rm=new THREE.MeshLambertMaterial({color:robes[i]});mats.push(rm);
+    g.position.set(-2.2+Math.cos(a)*r,H+0.06,Math.sin(a)*r);g.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));
+    bl(g,rm,0,0.16,0,0.36,0.17,0.3);   /* 跪坐的下身 */
+    var tor=new THREE.Mesh(new THREE.CylinderGeometry(0.15,0.22,0.5,14),rm);tor.position.y=0.5;g.add(tor);
+    var hd=bl(g,skin,0,0.86,0.01,0.1,0.12,0.11);bl(g,hair,0,0.9,-0.02,0.105,0.11,0.105);bl(g,hair,0,1.0,-0.02,0.045,0.045,0.045);
+    var trim=new THREE.Mesh(new THREE.TorusGeometry(0.155,0.02,6,16),new THREE.MeshLambertMaterial({color:0x2e3a58}));trim.rotation.x=Math.PI/2;trim.position.y=0.72;g.add(trim);
+    var bk=new THREE.Mesh(new THREE.BoxGeometry(0.22,0.03,0.16),book);bk.position.set(0,0.34,0.24);bk.rotation.x=-0.3;g.add(bk);
+    var arm=new THREE.Group();arm.position.set(-0.2,0.68,0);g.add(arm);   /* 右臂：提問時舉手 */
+    var ag=new THREE.CylinderGeometry(0.06,0.09,0.42,10);ag.translate(0,-0.21,0);var am=new THREE.Mesh(ag,rm);arm.add(am);arm.rotation.set(-0.7,0,-0.15);
+    bl(arm,skin,0,-0.44,0,0.04,0.05,0.03);
+    var la=new THREE.Mesh(ag,rm);la.position.set(0.2,0.68,0);la.rotation.set(-0.7,0,0.15);g.add(la);
+    g.traverse(function(o){o.userData.info='xingtan';});
+    var d={i:i,g:g,arm:arm,t:-1};g.userData.disciple=d;root.add(g);ds.push(d);}
+  root.traverse(function(o){if(!o.userData.info)o.userData.info='xingtan';});
+  function ask(d){if(d.t>=0)return;d.t=0;var qa=XT_QA[d.i];zhPhrase(ZH.E5,0.35);
+    sageSay(qa[1],qa[2],8000);speakNow(qa[1].replace(/[「」]/g,''));
+    if(teacherB)setTimeout(function(){if(!beastPlay(teacherB,'Teach')){}},1100);}
+  function tick(dt){for(var i=0;i<ds.length;i++){var d=ds[i];if(d.t<0)continue;d.t+=dt;var k=d.t<0.5?d.t/0.5:d.t>2.2?Math.max(0,1-(d.t-2.2)/0.6):1;
+    d.arm.rotation.set(-0.7-k*2.0,0,-0.15-k*0.25);if(d.t>2.8){d.t=-1;d.arm.rotation.set(-0.7,0,-0.15);}}}
+  return {ask:ask,tick:tick,root:root,top:H+0.06,setTeacher:function(b){teacherB=b;}};
+})();
+/* 把孔子模型複製一份，以原本的彩繪材質放上杏壇（銅像那份會另外換成青銅） */
+function xingtanTeacher(gltf){
+  var inst=cloneScene(gltf.scene),holder=new THREE.Group(),bb=new THREE.Box3().setFromObject(inst);
+  var s=1.85/Math.max(0.01,bb.max.y-bb.min.y);inst.scale.setScalar(s);inst.position.y=-bb.min.y*s;holder.add(inst);
+  holder.position.set(XT.x-2.2,xingtan.root.position.y+xingtan.top,XT.z);holder.rotation.y=Math.PI/2;holder.userData.info='xingtan';scene.add(holder);
+  beastSetup('teacher',inst,gltf,holder,0);var b=beasts.teacher;if(b){b.light.distance=6;xingtan.setTeacher(b);}
+}
+
 var SLOT_KEYS=['confucius','dragon','tiger','xuanwu','zhuque','qilin','sage'];
 function loadSlots(cfgAll){
   var slots=(cfgAll&&cfgAll.slots)||{},i;
   if(cfgAll&&cfgAll.credits)for(i=0;i<cfgAll.credits.length;i++){var c=cfgAll.credits[i];modelCredits.push({t:c.title||c.file||'',a:c.author||'',l:c.license||'',u:c.url||''});}
-  SLOT_KEYS.forEach(function(k){var cfg=slots[k]||{};loadGLB('models/'+(cfg.file||k+'.glb'),function(g){applySlot(k,g,cfg);});});
+  SLOT_KEYS.forEach(function(k){var cfg=slots[k]||{};loadGLB('models/'+(cfg.file||k+'.glb'),function(g){if(k==='confucius'&&!cfg.file)xingtanTeacher(g);applySlot(k,g,cfg);});});
 }
 function startModels(){
   if(!gltfLoader||location.protocol==='file:')return;
@@ -5998,7 +6108,7 @@ function startModels(){
 var BIRD_YAW=0;
 function birdsTick(dt){
   var i,f,p,n;for(i=0;i<mixers.length;i++)mixers[i].update(dt);
-  beastsTick(dt);
+  beastsTick(dt);xingtan.tick(dt);
   apricot.tick(dt,performance.now()/1000);
   for(i=0;i<flock.length;i++){f=flock[i];f.a+=f.w*dt;
     var x=f.cx+Math.cos(f.a)*f.r,z=f.cz+Math.sin(f.a)*f.r*0.8,y=f.y+Math.sin(f.a*3+i)*2;
