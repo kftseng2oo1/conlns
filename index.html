@@ -4837,7 +4837,7 @@ var apricot=(function(){
     var t=trees[ti];t.shake=1;
     for(var k=0;k<140;k++){var j=bi;bi=(bi+1)%BN;var a=Math.random()*6.283,r=Math.random()*1.8*t.s;bp[j*3]=t.x+Math.cos(a)*r;bp[j*3+1]=t.y+(1.8+Math.random()*1.6)*t.s;bp[j*3+2]=t.z+Math.sin(a)*r;
       bv[j*3]=Math.cos(a)*1.2;bv[j*3+1]=0.4+Math.random()*0.8;bv[j*3+2]=Math.sin(a)*1.2;bl[j]=1;}
-    try{bsNoise(1.2,0.25,'bandpass',900,0.5);[1047,1175,1319].forEach(function(f,k){bsTone(f,1,0.03,'sine',k*0.12);});}catch(e){}
+    try{var hi=[ZH.G5,ZH.A5,ZH.C6,ZH.D6,ZH.E6];zhNote(hi[Math.floor(Math.random()*5)],0,0.28);zhNote(hi[Math.floor(Math.random()*5)],0.2,0.22);zhNote(ZH.E5,0.42,0.25,true);}catch(e){}
   }
   function tick(dt,tm){
     acc+=dt;if(acc>0.35&&last.distanceToSquared(camera.position)>4){acc=0;rebuild();}
@@ -5776,7 +5776,9 @@ function beastSetup(key,inst,gltf,holder,idx){
 function beastPlay(b,name,loop,reps,force){
   var a=b.A[name];if(!a||(b.busy&&!force))return false;b.busy=true;
   a.reset();a.setLoop(loop||THREE.LoopOnce,reps||1);a.clampWhenFinished=false;
-  b.A.Idle.fadeOut(0.25);a.fadeIn(0.25).play();return true;
+  b.A.Idle.fadeOut(0.25);a.fadeIn(0.25).play();
+  var tn=ZH_TONIC[b.key]||ZH.C4;if(name==='Awaken')zhGliss(tn,0.4);else if(!/^(Fly|Run|Leap)$/.test(name))zhPhrase(tn,b.near&&name!=='Stand'?0.35:0.45);
+  return true;
 }
 function beastTap(b,obj){
   var n=obj,part=b.def.dflt;
@@ -5829,7 +5831,7 @@ function wuxingFinale(b){
   var p=b.holder.position,sc=b.inst.scale.x,R=3.2*sc,cols=[[0x3fd8b8,1,0],[0xff5a20,0,1],[0xe8eeff,-1,0],[0x5a6aff,0,-1],[0xffd36a,0,0]],k;
   for(k=0;k<5;k++){var c=cols[k],m=new THREE.Mesh(new THREE.CylinderGeometry(0.35*sc,0.6*sc,1,24,1,true),new THREE.MeshBasicMaterial({color:c[0],transparent:true,opacity:0.0,blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide}));
     m.position.set(p.x+c[1]*R,p.y,p.z+c[2]*R);m.userData.noCollide=true;m.raycast=function(){};scene.add(m);wxPillars.push({m:m,t:-k*0.25,h:12*sc});}
-  [131,196,262,294,330,392,440,523].forEach(function(f,i){bsTone(f,4,0.07,i%2?'triangle':'sine',i*0.15);});
+  zhGliss(ZH.C4,0.4);setTimeout(function(){zhGliss(ZH.C5,0.3);},1400);
   for(k=0;k<10;k++)bsRing(b,cols[k%5][0],k*200);
   bsBurst(b,120,1.5,2.5,1.2,0.5);b.g=4;
   $('hint').textContent='五行圓滿・木火土金水，仁義禮智信';$('hint').style.opacity=1;setTimeout(hideHint,6000);
@@ -5839,6 +5841,31 @@ function wxTick(dt){for(var i=wxPillars.length-1;i>=0;i--){var w=wxPillars[i];w.
   w.m.scale.y=w.h*k;w.m.position.y=w.m.userData.y0===undefined?(w.m.userData.y0=w.m.position.y):w.m.userData.y0;w.m.position.y=w.m.userData.y0+w.m.scale.y/2;
   w.m.material.opacity=0.55*Math.min(1,w.t/0.6)*(1-smooth01(4,6,w.t));if(w.t>6){scene.remove(w.m);w.m.geometry.dispose();w.m.material.dispose();wxPillars.splice(i,1);}}}
 function smooth01(a,b,x){var t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);}
+/* --- 古箏音色：撥弦合成（Karplus-Strong），清亮起音、綿長尾韻，長音帶揉弦 --- */
+var ZH={C4:262,D4:294,E4:330,G4:392,A4:440,C5:523,D5:587,E5:659,G5:784,A5:880,C6:1047,D6:1175,E6:1319},ZH_SCALE=[262,294,330,392,440,523,587,659,784,880,1047,1175,1319];
+var zhCache={};
+function zhBuf(a,f){var k=Math.round(f);if(zhCache[k])return zhCache[k];
+  var sr=a.sampleRate,len=Math.floor(sr*3.2),buf=a.createBuffer(1,len,sr),d=buf.getChannelData(0),N=Math.max(2,Math.round(sr/f)),ring=new Float32Array(N),i,p=0;
+  for(i=0;i<N;i++)ring[i]=(Math.random()*2-1)*0.8;
+  for(i=0;i<N;i++)ring[i]=0.5*(ring[i]+ring[(i+1)%N]);   /* 撥弦位置：略柔化高頻 */
+  var damp=Math.min(0.9995,0.9985+0.0009*(262/f));
+  for(i=0;i<len;i++){var nx=(p+1)%N,v=ring[p];d[i]=v;ring[p]=damp*0.5*(v+ring[nx]);p=nx;}
+  return zhCache[k]=buf;}
+function zhNote(f,delay,vol,yin){var a=bsAudio();if(!a)return;var t0=a.currentTime+(delay||0),src=a.createBufferSource(),flt=a.createBiquadFilter(),body=a.createBiquadFilter(),g=a.createGain();
+  src.buffer=zhBuf(a,f);flt.type='lowpass';flt.frequency.setValueAtTime(5200,t0);flt.frequency.exponentialRampToValueAtTime(1500,t0+1.6);
+  body.type='peaking';body.frequency.value=420;body.Q.value=1.2;body.gain.value=4;
+  g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime((vol||0.5),t0+0.004);g.gain.exponentialRampToValueAtTime(0.0008,t0+3.0);
+  if(yin){var r=src.playbackRate;r.setValueAtTime(1,t0+0.25);r.linearRampToValueAtTime(1.028,t0+0.5);r.linearRampToValueAtTime(1,t0+0.75);r.linearRampToValueAtTime(1.02,t0+1.0);r.linearRampToValueAtTime(1,t0+1.25);}
+  src.connect(flt);flt.connect(body);body.connect(g);g.connect(a.destination);src.start(t0);src.stop(t0+3.1);}
+function zhIdx(f){var i,b=0;for(i=0;i<ZH_SCALE.length;i++)if(Math.abs(ZH_SCALE[i]-f)<Math.abs(ZH_SCALE[b]-f))b=i;return b;}
+/* 短句：從主音上方兩三個音往下，落在主音並加吟 */
+function zhPhrase(tonic,vol){var t=zhIdx(tonic),n=2+Math.floor(Math.random()*2),i,seq=[];var top=Math.min(ZH_SCALE.length-1,t+n+Math.floor(Math.random()*2));
+  for(i=0;i<n;i++)seq.push(ZH_SCALE[Math.max(t,top-i-(Math.random()<0.3?1:0))]);seq.push(ZH_SCALE[t]);
+  for(i=0;i<seq.length;i++)zhNote(seq[i],i*0.17,(vol||0.45)*(i===seq.length-1?1:0.8),i===seq.length-1);}
+/* 刮奏：由低到高掃過五聲音階，收在主音與其五度 */
+function zhGliss(tonic,vol){var i,v=vol||0.35;for(i=0;i<ZH_SCALE.length;i++)zhNote(ZH_SCALE[i],i*0.045,v*0.6);
+  var t=zhIdx(tonic);zhNote(ZH_SCALE[t],0.75,v,true);zhNote(ZH_SCALE[Math.min(ZH_SCALE.length-1,t+3)],0.8,v*0.7,false);zhNote(ZH_SCALE[Math.max(0,t-5)]||ZH_SCALE[0],0.85,v*0.6,false);}
+var ZH_TONIC={xuanwu:ZH.A4,zhuque:ZH.G4,dragon:ZH.E4,tiger:ZH.D4,qilin:ZH.C4};
 /* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商，麒麟土＝宮） --- */
 var bsAC=null;
 function bsAudio(){if(!bsAC){try{bsAC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(bsAC&&bsAC.state==='suspended')bsAC.resume();return bsAC;}
@@ -5880,66 +5907,66 @@ function bsBurst(b,n,y0,spread,up,gold){var p=b.holder.position,sc=b.inst.scale.
 
 var BEAST_DEFS={
   /* 智廳 玄武：點龜殼鳴鐘發光、點龜頭縮頸、點靈蛇昂首、點腳踏步 */
-  xuanwu:{gaze:['Head','SnakeHead'],nearR:8,approach:function(b){if(beastPlay(b,'SnakeRear'))bsNoise(0.8,0.4,'bandpass',5200,0.8,0,'decay');},
+  xuanwu:{gaze:['Head','SnakeHead'],nearR:8,approach:function(b){beastPlay(b,'SnakeRear');},
     glow:/^carapace$/,glowColor:0x58e0d0,dflt:'shell',
     part:function(n){if(/^Snake/.test(n))return 'snake';if(n==='Neck')return 'head';if(/^Leg_/.test(n))return 'leg';return null;},
     tap:{
-      shell:function(b){b.g=Math.max(b.g,2.2);bsGong(YU);bsRing(b,0x6fe3d6,0);bsRing(b,0xe6c97a,250);},
-      head:function(b){if(beastPlay(b,'Retract',THREE.LoopPingPong,2)){var a=bsAudio();if(a)bsTone(140,0.4,0.22,'triangle',0,70);}},
-      snake:function(b){if(beastPlay(b,'SnakeRear'))bsNoise(0.8,0.45,'bandpass',5200,0.8,0,'decay');},
+      shell:function(b){b.g=Math.max(b.g,2.2);zhPhrase(ZH_TONIC.xuanwu,0.45);bsRing(b,0x6fe3d6,0);bsRing(b,0xe6c97a,250);},
+      head:function(b){if(beastPlay(b,'Retract',THREE.LoopPingPong,2)){}},
+      snake:function(b){beastPlay(b,'SnakeRear');},
       leg:function(b){beastPlay(b,'Walk',THREE.LoopRepeat,1);}},
-    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[440,523,659,880,1047].forEach(function(f,i){bsTone(f,2.4,0.07,'sine',i*0.12);});bsGong(YU);
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;
       for(var k=0;k<6;k++)bsRing(b,k%2?0xe6c97a:0x6fe3d6,k*220);}},
   /* 仁廳、集賢廳 麒麟（四隻）：點頭長鳴、點蹄踏步生光、點身體抖鬃、點石台吐玉書「天下為公」；連點五下喚醒、騰躍繞殿 */
-  qilin:{gaze:['Head'],nearR:8,approach:function(b){if(beastPlay(b,'Cry')){bsTone(523,1.2,0.08,'triangle',0,784);bsTone(262,1.4,0.05);}},
+  qilin:{gaze:['Head'],nearR:8,approach:function(b){if(beastPlay(b,'Cry')){}},
     glow:/^(scales|jade|horn|qilin_eye|wisp|mane|scroll)$/,glowColor:0xffd36a,dflt:'body',
     part:function(n){if(/^(Head$|Neck$|Jaw$|Mane$|Horn$|Scroll)/.test(n))return 'head';if(/^Leg_/.test(n))return 'hoof';if(n==='Altar')return 'altar';if(/^(Hips$|Spine$|Chest$|Tail|Body$)/.test(n))return 'body';return null;},
     tap:{
-      head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.5);bsTone(523,1.4,0.1,'triangle',0,784);bsTone(784,1.2,0.06,'sine',0.35,659);bsTone(262,1.6,0.06);}},
-      hoof:function(b){if(beastPlay(b,'Stamp')){bsNoise(0.25,0.6,'lowpass',300,1,0.3);bsTone(131,0.5,0.15,'sine',0.3);[1047,1175,1319].forEach(function(f,i){bsTone(f,0.8,0.04,'sine',0.35+i*0.06);});setTimeout(function(){bsRing(b,0xffd36a,0);bsBurst(b,40,0.7,0.5,0.5,0.6);},420);}},
-      body:function(b){if(beastPlay(b,'Shake')){[1047,1175,1319,1568,1760].forEach(function(f,i){bsTone(f,1.4,0.05,'sine',i*0.07);});bsBurst(b,40,1.8,0.6,0.5,0.6);}},
-      altar:function(b){if(beastPlay(b,'Scroll')){b.g=Math.max(b.g,1.8);[262,392,523,659,784].forEach(function(f,i){bsTone(f,2.4,0.07,'triangle',i*0.25);bsTone(f*2,1.6,0.025,'sine',i*0.25+0.02);});
+      head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.5);}},
+      hoof:function(b){if(beastPlay(b,'Stamp')){setTimeout(function(){bsRing(b,0xffd36a,0);bsBurst(b,40,0.7,0.5,0.5,0.6);},420);}},
+      body:function(b){if(beastPlay(b,'Shake')){bsBurst(b,40,1.8,0.6,0.5,0.6);}},
+      altar:function(b){if(beastPlay(b,'Scroll')){b.g=Math.max(b.g,1.8);
         setTimeout(function(){$('hint').textContent='麒麟吐玉書・天下為公';$('hint').style.opacity=1;setTimeout(hideHint,3500);},900);}}},
-    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[131,196,262,294,330,392,440].forEach(function(f,i){bsTone(f,3.2,0.06,i%2?'triangle':'sine',i*0.1);});
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;
       for(var k=0;k<6;k++)bsRing(b,k%2?0xffd36a:0x5ff0c0,k*220);
       b.next=function(){beastPlay(b,'Leap',THREE.LoopOnce,1,true);};}},
   /* 義廳 白虎：點頭虎嘯、點前爪揮爪、點尾巴甩尾、點身體起身、點山岩台座金石鳴；連點五下喚醒白虎、繞殿奔馳 */
-  tiger:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Stand')){b.hold='Stand';bsNoise(1.2,0.45,'lowpass',200,1.2);bsTone(73,1.2,0.14,'sawtooth',0,98);}},
+  tiger:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Stand')){b.hold='Stand';}},
     glow:/^(fur|fur_leg|fur_head|armor|stars|star_lines|wisp|tiger_eye)$/,glowColor:0x9fc8ff,dflt:'body',
     part:function(n){if(/^(Head$|Neck$|Jaw$)/.test(n))return 'head';if(/^Leg_F/.test(n))return 'paw';if(/^Tail_/.test(n))return 'tail';if(n==='Altar')return 'altar';if(/^(Hips$|Spine$|Chest$|Leg_B)/.test(n))return 'body';return null;},
     tap:{
-      head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.2);bsNoise(1.5,0.6,'lowpass',260,1.4);bsTone(73,1.5,0.22,'sawtooth',0,147);bsTone(147,1.2,0.08,'triangle',0.05,220);bsRing(b,0xbfd8ff,0);bsRing(b,0xf2d48a,200);}},
-      paw:function(b){if(beastPlay(b,'Swipe')){for(var k=0;k<3;k++)bsNoise(0.18,0.5,'highpass',2500,0.8,0.5+k*0.07);bsTone(1175,0.4,0.05,'triangle',0.55,587);setTimeout(function(){bsBurst(b,30,1.0,0.6,0.3,0.8);},520);}},
-      tail:function(b){if(beastPlay(b,'TailLash'))bsNoise(0.12,0.7,'bandpass',1800,1.5,0.25);},
-      body:function(b){if(beastPlay(b,'Stand')){b.g=Math.max(b.g,2);bsTone(587,1.2,0.05);bsTone(880,1.4,0.04,'sine',0.2);}},
-      altar:function(b){b.g=Math.max(b.g,2.2);var f=294;bsTone(f,3,0.25);bsTone(f*2.76,2,0.08);bsTone(f*5.4,1.2,0.04);bsTone(f*1.5,2.4,0.06);bsRing(b,0xf2d48a,0);bsRing(b,0xbfd8ff,250);bsBurst(b,50,0.4,0.7,0.8,0.5);}},
-    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[147,220,294,330,440,587].forEach(function(f,i){bsTone(f,3,0.07,i%2?'triangle':'sine',i*0.12);});bsNoise(1.5,0.6,'lowpass',260,1.4);
+      head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.2);bsRing(b,0xbfd8ff,0);bsRing(b,0xf2d48a,200);}},
+      paw:function(b){if(beastPlay(b,'Swipe')){setTimeout(function(){bsBurst(b,30,1.0,0.6,0.3,0.8);},520);}},
+      tail:function(b){beastPlay(b,'TailLash');},
+      body:function(b){if(beastPlay(b,'Stand')){b.g=Math.max(b.g,2);}},
+      altar:function(b){b.g=Math.max(b.g,2.2);zhPhrase(ZH_TONIC.tiger,0.45);bsRing(b,0xf2d48a,0);bsRing(b,0xbfd8ff,250);bsBurst(b,50,0.4,0.7,0.8,0.5);}},
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;
       for(var k=0;k<6;k++)bsRing(b,k%2?0xf2d48a:0xbfd8ff,k*220);
       b.next=function(){beastPlay(b,'Run',THREE.LoopOnce,1,true);};}},
   /* 信廳 青龍：點龍頭長吟、點龍身游動、點龍爪龍珠旋光、點祥雲台雲湧；連點五下喚醒神龍、騰雲繞殿 */
-  dragon:{gaze:['Head'],nearR:10,approach:function(b){if(beastPlay(b,'Roar')){bsNoise(1.2,0.3,'lowpass',260,1.2);bsTone(82,1.4,0.12,'sawtooth',0,165);}},
+  dragon:{gaze:['Head'],nearR:10,approach:function(b){if(beastPlay(b,'Roar')){}},
     glow:/^(scales|belly|wisp|pearl|cloud|dragon_eye)$/,glowColor:0x5ff0d8,dflt:'body',
     part:function(n){if(/^(Head$|Jaw$|Mane$|Whiskers$)/.test(n))return 'head';if(/^(Pearl$|Leg_FR)/.test(n))return 'pearl';if(/^(Altar$|Cloud_)/.test(n))return 'cloud';if(/^(Body_|Leg_|TailFin$)/.test(n))return 'body';return null;},
     tap:{
-      head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.4);bsNoise(1.6,0.55,'lowpass',320,1.2);bsTone(82,1.6,0.2,'sawtooth',0,165);bsTone(165,1.4,0.08,'triangle',0.1,330);}},
-      body:function(b){if(beastPlay(b,'Undulate')){bsNoise(1.4,0.35,'bandpass',600,0.6);bsTone(330,1.2,0.05,'sine',0.2,494);bsBurst(b,40,1.6,1.2,0.4,0.4);}},
-      pearl:function(b){if(beastPlay(b,'Pearl')){b.g=Math.max(b.g,1.6);[659,740,831,988,1109,1319].forEach(function(f,i){bsTone(f,1.6,0.06,'sine',i*0.08);});}},
-      cloud:function(b){if(beastPlay(b,'Cloud')){bsNoise(1.8,0.5,'lowpass',900,0.5);bsRing(b,0x5ff0d8,0);bsRing(b,0xbff8ff,250);bsBurst(b,60,0.5,0.9,1.0,0.2);}}},
-    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[165,247,330,415,494,659].forEach(function(f,i){bsTone(f,3,0.07,i%2?'triangle':'sine',i*0.12);});bsNoise(1.2,0.6,'lowpass',180,0.8);
+      head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.4);}},
+      body:function(b){if(beastPlay(b,'Undulate')){bsBurst(b,40,1.6,1.2,0.4,0.4);}},
+      pearl:function(b){if(beastPlay(b,'Pearl')){b.g=Math.max(b.g,1.6);}},
+      cloud:function(b){if(beastPlay(b,'Cloud')){bsRing(b,0x5ff0d8,0);bsRing(b,0xbff8ff,250);bsBurst(b,60,0.5,0.9,1.0,0.2);}}},
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;
       for(var k=0;k<6;k++)bsRing(b,k%2?0xbff8ff:0x3fd8b8,k*220);bsBurst(b,80,1.6,1.4,1.0,0.3);
-      b.next=function(){beastPlay(b,'Fly',THREE.LoopOnce,1,true);bsNoise(1.4,0.35,'bandpass',600,0.6);};}},
+      b.next=function(){beastPlay(b,'Fly',THREE.LoopOnce,1,true);};}},
   /* 禮廳 朱雀：點頭長鳴、點翅振翅、點尾羽開屏、點火焰台火焰竄高；連點五下浴火重生、繞殿飛翔 */
-  zhuque:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Cry')){bsTone(784,1.1,0.1,'triangle',0,1175);bsTone(988,1.0,0.06,'sine',0.4,1568);}},
+  zhuque:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Cry')){}},
     glow:/^(feather|feather_orn|tail_eye|plumage|wisp|breast|zhuque_eye)$/,glowColor:0xff7a20,dflt:'wing',
     part:function(n){if(/^Tail_/.test(n))return 'tail';if(/^(Neck_|Head$|Crest$|Beak)/.test(n))return 'head';if(/^Wing_/.test(n))return 'wing';if(/^(Altar$|Flame_)/.test(n))return 'altar';return null;},
     tap:{
-      head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.2);bsTone(784,1.1,0.12,'triangle',0,1175);bsTone(1175,0.9,0.08,'sine',0.35,988);bsTone(988,1.2,0.07,'sine',0.75,1568);bsTone(392,1.6,0.05,'sine');}},
-      wing:function(b){if(beastPlay(b,'Flap')){for(var i=0;i<3;i++)bsNoise(0.32,0.5,'lowpass',700,0.7,i*0.42);bsBurst(b,30,1.6,1.4,0.2,0.5);}},
-      tail:function(b){if(beastPlay(b,'Display')){b.g=Math.max(b.g,1.5);[784,880,988,1175,1319,1568].forEach(function(f,i){bsTone(f,1.8,0.06,'sine',i*0.09);});}},
-      altar:function(b){if(beastPlay(b,'Flame')){bsNoise(1.6,0.6,'lowpass',260,0.8);bsTone(ZHI,1.8,0.12);bsRing(b,0xff7a20,0);bsRing(b,0xffd36a,250);bsBurst(b,60,0.75,0.4,1.4,0.4);}}},
-    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[196,294,392,440,587,784].forEach(function(f,i){bsTone(f,3,0.07,i%2?'triangle':'sine',i*0.12);});bsNoise(1.6,0.6,'lowpass',260,0.8);
+      head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.2);}},
+      wing:function(b){if(beastPlay(b,'Flap')){bsBurst(b,30,1.6,1.4,0.2,0.5);}},
+      tail:function(b){if(beastPlay(b,'Display')){b.g=Math.max(b.g,1.5);}},
+      altar:function(b){if(beastPlay(b,'Flame')){bsRing(b,0xff7a20,0);bsRing(b,0xffd36a,250);bsBurst(b,60,0.75,0.4,1.4,0.4);}}},
+    awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;
       for(var k=0;k<6;k++)bsRing(b,k%2?0xffd36a:0xff5a20,k*220);bsBurst(b,80,1.2,1.2,1.2,0.5);
-      b.next=function(){beastPlay(b,'Fly',THREE.LoopOnce,1,true);for(var i=0;i<6;i++)bsNoise(0.32,0.4,'lowpass',700,0.7,i*0.5);};}}
+      b.next=function(){beastPlay(b,'Fly',THREE.LoopOnce,1,true);};}}
 };
 var SLOT_KEYS=['confucius','dragon','tiger','xuanwu','zhuque','qilin','sage'];
 function loadSlots(cfgAll){
