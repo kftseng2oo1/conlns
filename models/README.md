@@ -10,7 +10,7 @@
 | `tiger.glb` | 義廳 白虎（**已內附**，可互動） | 1 |
 | `xuanwu.glb` | 智廳 玄武（**已內附**，可互動） | 1 |
 | `zhuque.glb` | 禮廳 朱雀（**已內附**，可互動） | 1 |
-| `qilin.glb` | 集賢廳＋仁廳 麒麟 | 4（自動複製） |
+| `qilin.glb` | 集賢廳＋仁廳 麒麟（**已內附**，可互動） | 4（自動複製） |
 | `sage.glb` | 七十二賢廊 賢人 | 72（自動複製，建議 5,000 面以下） |
 
 ## 選用設定 `models.json`
@@ -39,6 +39,8 @@
 
 `tiger.glb`（白虎）同為原創程式生成模型：端坐雪岩、水墨黑紋金箔白毛、青銅鑲玉肩甲與護心鏡、身側參宿星圖，內含 `Idle`、`Roar`、`Swipe`、`TailLash`、`Stand`、`Run`、`Awaken` 七段動畫。
 
-四隻神獸的互動寫在 `index.html` 的 `BEAST_DEFS` 設定表；之後青龍、白虎、麒麟只要做好帶動畫的 glb，再加一項設定即可。
+`qilin.glb`（麒麟）同為原創程式生成模型：鹿身馬蹄龍首、翡翠金鱗、水晶獨角、星點靈氣鬃、青銅金飾玉珠、金焰四肢，站在刻「仁」字的雕花石台上；內含 `Idle`、`Cry`、`Stamp`、`Shake`、`Scroll`（吐玉書「天下為公」）、`Leap`、`Awaken` 七段動畫。四隻各自有獨立的動畫與材質。
+
+五隻神獸的互動寫在 `index.html` 的 `BEAST_DEFS` 設定表；之後青龍、白虎、麒麟只要做好帶動畫的 glb，再加一項設定即可。
 
 `bird-parrot.glb`（青鳥）與 `bird-stork.glb`（鶴群）取自 three.js 範例模型（原作 mirada.com，ro.me 專案），隨 three.js 以 MIT 授權發布。
