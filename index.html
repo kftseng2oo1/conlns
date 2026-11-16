@@ -5226,11 +5226,15 @@ room({cx:X,cz:-181.5,w:53,d:53,y0:45,h:27,wall:0xc49a40,floor:0xb8963e,ceil:0x8a
     tag(plane(22,22,tt,X+s*26.1,45+12,-181.5+k*(4+11),-s*Math.PI/2,0.05),'shelf');
   }
   /* 20 支天立柱 */
-  var ct=ctex(256,1024,function(g,w,h){g.fillStyle='#8a2218';g.fillRect(0,0,w,h);
+  /* 每支柱子題一句不同的《論語》，字級依句長自動調整，前後各一行 */
+  var LINES=['學而時習之不亦說乎','有朋自遠方來不亦樂乎','溫故而知新可以為師矣','三人行必有我師焉','己所不欲勿施於人','德不孤必有鄰','見賢思齊焉','君子坦蕩蕩小人長戚戚','知者不惑仁者不憂勇者不懼','歲寒然後知松柏之後彫也',
+    '君子和而不同','工欲善其事必先利其器','人無遠慮必有近憂','敏而好學不恥下問','學而不思則罔思而不學則殆','知之為知之不知為不知','吾日三省吾身','朝聞道夕死可矣','志於道據於德依於仁游於藝','克己復禮為仁'];
+  function colTex(line){return ctex(256,1024,function(g,w,h){g.fillStyle='#8a2218';g.fillRect(0,0,w,h);
     g.fillStyle='#2f5a3a';g.fillRect(0,0,w,h*0.5);g.strokeStyle='#8fbf7a';g.lineWidth=4;var i;for(i=0;i<18;i++){g.beginPath();g.moveTo(20+i*12,h*0.5);g.lineTo(30+i*10,30+(i%9)*20);g.stroke();}
-    g.fillStyle='#e8c46a';g.fillRect(0,h*0.5-6,w,12);g.font='bold 44px '+FONT;g.textAlign='center';g.textBaseline='middle';vtext(g,'學而時習之不亦說乎',64+22,h*0.52+14,44,9,0);vtext(g,'學而時習之不亦說乎',192+22,h*0.52+14,44,9,0);});
-  var cm=new THREE.MeshLambertMaterial({map:ct});
-  for(s=-1;s<=1;s+=2)for(k=0;k<10;k++){var c=new THREE.Mesh(new THREE.CylinderGeometry(0.75,0.85,19.5,14),cm);c.position.set(X+s*13,45+9.75,-159.5-k*4.85);c.rotation.y=s>0?Math.PI:0;tag(c,'column');scene.add(c);
+    g.fillStyle='#e8c46a';g.fillRect(0,h*0.5-6,w,12);
+    var n=line.length,sz=Math.floor(Math.min(48,434/(n*1.08))),top=h*0.52+14+(434-n*sz*1.08)/2;
+    g.font='bold '+sz+'px '+FONT;g.textAlign='center';g.textBaseline='middle';vtext(g,line,64+sz/2,top,sz,n,0);vtext(g,line,192+sz/2,top,sz,n,0);});}
+  for(s=-1;s<=1;s+=2)for(k=0;k<10;k++){var c=new THREE.Mesh(new THREE.CylinderGeometry(0.75,0.85,19.5,14),new THREE.MeshLambertMaterial({map:colTex(LINES[(s<0?0:10)+k])}));c.position.set(X+s*13,45+9.75,-159.5-k*4.85);c.rotation.y=s>0?Math.PI:0;tag(c,'column');scene.add(c);
     box(2.4,0.6,2.4,M(0xd9a83a),X+s*13,64.8,-159.5-k*4.85);}
   /* 三層蠟燭水晶燈 */
   var lg=new THREE.Group(),cr=M(0xf6f0e0,{emissive:0xffe9b0,emissiveIntensity:0.9}),rim=M(0xd9a83a,{emissive:0x3a2600}),t,n,a;
