@@ -5137,8 +5137,9 @@ function makeScreen(THREE, opt) {
 }
 
 var embScreen=makeScreen(THREE,{font:FONT});
-embScreen.group.position.set(X,30.0,39.6);embScreen.group.traverse(function(o){o.userData.info='screen';});scene.add(embScreen.group);
+mergeStatic(embScreen.group);embScreen.group.position.set(X,30.0,39.6);embScreen.group.traverse(function(o){o.userData.info='screen';});scene.add(embScreen.group);
 function findScreenPanel(o){while(o&&o!==scene){if(o.userData&&o.userData.screenPanel)return o.userData.screenPanel;o=o.parent;}return null;}
+var distCull=[],distCullT=0;   /* 遠距隱藏清單（見 distCullTick） */
 /* 銅鑄童子擊鼓／舉鼓 程式模型 */
 /* 銅鑄童子擊鼓／舉鼓（ES5，導覽 three r147 與預覽頁共用）
    童子：大頭圓臉、總角雙髻繫帶、交領短衫束腰、燈籠褲小靴，站在圓形銅座上
@@ -5261,7 +5262,7 @@ var tongzi=null;
   var TZ=makeTongzi(THREE),tl=[];
   for(s=-1;s<=1;s+=2)for(i=0;i<3;i++)for(j=0;j<5;j++)tl.push({x:X+s*(12+i*2.8),y:30,z:34+j*4,ry:-s*Math.PI/2,type:(i+j)%2?'A':'B'});
   tongzi=makeTongziGroup(THREE,TZ,tl,{scale:1.05,drum:function(f,v){if(zhonggu)zhonggu.drum(f,v);},onWave:function(){$('hint').innerHTML='鼓陣齊鳴！<br><small style="opacity:.75">三十位童子一同擊鼓</small>';$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,3500);}});
-  tag(tongzi.group,'drummer');scene.add(tongzi.group);
+  tag(tongzi.group,'drummer');scene.add(tongzi.group);distCull.push({o:tongzi.group,p:new THREE.Vector3(X,31,42),r:200});
 })();
 
 /* 2. 大學之道 99 階  z 30→-20, y 30→45 */
@@ -5618,6 +5619,7 @@ room({cx:X,cz:-72.5,w:26,d:105,y0:45,h:16,wall:0x5e3424,floor:0x7a5a3c,ceil:0x3a
   var pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.Float32BufferAttribute(pp,3));pg.setAttribute('uv',new THREE.Float32BufferAttribute(pu,2));pg.setIndex(pi);pg.computeVertexNormals();
   var plq=new THREE.Mesh(pg,new THREE.MeshLambertMaterial({map:atlas,emissive:0x2a1408}));plq.userData.noCollide=true;plq.userData.disPlaque=true;tag(plq,'sages');scene.add(plq);
   DISCIPLES72=figs;
+  (function(){var g72=new THREE.Group();scene.children.slice().forEach(function(o){if(o.userData&&(o.userData.disIdx||o.userData.disPlaque)){scene.remove(o);g72.add(o);}});tag(g72,'sages');scene.add(g72);distCull.push({o:g72,p:new THREE.Vector3(X,46,-72),r:200});})();
   /* 鎏金斗拱天花 */
   var N=4*42,im=new THREE.InstancedMesh(new THREE.BoxGeometry(1.2,0.6,1.2),M(0xc99a3a,{emissive:0x2a1a00}),N),d=new THREE.Object3D(),n=0,a,b;
   for(a=0;a<4;a++)for(b=0;b<42;b++){d.position.set(X-7.5+a*5,60.4,-22.5-b*2.5);d.updateMatrix();im.setMatrixAt(n++,d.matrix);}
@@ -5773,7 +5775,7 @@ function makeZhonggu(THREE, opt) {
     for (i = 0; i <= n; i++) { var t = i / n, rr = r * (1 + 0.12 * Math.sin(Math.PI * t)); pts.push(new THREE.Vector2(rr, -L / 2 + L * t)); }
     var lg = new THREE.LatheGeometry(pts, 32); lg.rotateX(Math.PI / 2); var body = shade(new THREE.Mesh(lg, drumBody)); g.add(body);
     var skins = [];
-    for (var s = -1; s <= 1; s += 2) { var sk = shade(new THREE.Mesh(new THREE.CircleGeometry(r * 0.995, 32), skin)); sk.position.z = s * (L / 2 + 0.002); if (s < 0) sk.rotation.y = Math.PI; g.add(sk); skins.push(sk);
+    for (var s = -1; s <= 1; s += 2) { var sk = shade(new THREE.Mesh(new THREE.CircleGeometry(r * 0.995, 32), skin)); sk.userData.keep = true; sk.position.z = s * (L / 2 + 0.002); if (s < 0) sk.rotation.y = Math.PI; g.add(sk); skins.push(sk);
       var studs = [], sg = new THREE.SphereGeometry(r * 0.035, 6, 4); for (i = 0; i < 28; i++) { var a = i / 28 * TAU, q = sg.clone(); q.translate(Math.cos(a) * r * 1.01, Math.sin(a) * r * 1.01, s * (L / 2 - r * 0.07)); studs.push(q); }
       g.add(shade(new THREE.Mesh(merge(studs), gold))); }
     return { group: g, skins: skins };
@@ -5840,8 +5842,8 @@ room({cx:X,cz:-140.3,w:30,d:29.4,y0:45,h:15,wall:0x9a2a1e,floor:0x6a2a1e,ceil:0x
   var tex2=tex.clone();tex2.needsUpdate=true;plane(27,5,tex2,X+14.65,51,-140,-Math.PI/2,0.1);
   /* 編鐘（北牆門兩側）、建鼓（東西兩側）、門頭懸鼓：都可以點擊敲響 */
   var R2,k2,s2;
-  for(s2=-1;s2<=1;s2+=2){R2=zhonggu.rack();R2.group.position.set(X+s2*9.4,45,-153.4);R2.group.scale.setScalar(0.92);tag(R2.group,'liMusic');scene.add(R2.group);}
-  for(s2=-1;s2<=1;s2+=2){var J2=zhonggu.jiangu();J2.group.position.set(X+s2*12.6,45,-146);tag(J2.group,'liMusic');scene.add(J2.group);}
+  for(s2=-1;s2<=1;s2+=2){R2=zhonggu.rack();mergeStatic(R2.group);R2.group.position.set(X+s2*9.4,45,-153.4);R2.group.scale.setScalar(0.92);tag(R2.group,'liMusic');scene.add(R2.group);}
+  for(s2=-1;s2<=1;s2+=2){var J2=zhonggu.jiangu();mergeStatic(J2.group);J2.group.position.set(X+s2*12.6,45,-146);tag(J2.group,'liMusic');scene.add(J2.group);}
   var DF=[82,98,110,123,131,147,165,196,220];
   for(k2=0;k2<9;k2++){var d2=zhonggu.wallDrum(0.36,0.7,DF[k2]);d2.g.position.set(X-6+k2*1.5,55.2,-126.05);tag(d2.g,'liMusic');scene.add(d2.g);}
   TAG=null;
@@ -6720,6 +6722,32 @@ function applySlot(key,gltf,cfg){
 /* ===== 神獸互動模組：各神獸以設定表描述「點哪個部位 → 播哪段動畫、什麼聲音、什麼特效」 =====
    新增神獸：在 BEAST_DEFS 加一項（part 判斷部位、tap 各部位反應、awaken 連點五下的大招、glow 發光材質） */
 var beasts={};
+
+/* 效能：把同一節點底下、材質相同的靜態子網格合併成一個（不影響節點動畫與點擊部位判斷），大幅減少繪製次數 */
+function mergeStatic(root,animNames,keepName){
+  var nodes=[],total=0;root.traverse(function(o){nodes.push(o);});
+  nodes.forEach(function(nd){
+    var groups={},k;
+    for(var i=0;i<nd.children.length;i++){var c=nd.children[i];
+      if(!c.isMesh||c.isInstancedMesh||c.isSkinnedMesh||c.children.length||Array.isArray(c.material)||c.userData.keep||(animNames&&animNames[c.name])||(keepName&&c.name&&keepName(c.name))||c.morphTargetInfluences)continue;
+      var g=c.geometry,sig=Object.keys(g.attributes).sort().join(',');if(!g.attributes.position||!g.attributes.normal)continue;
+      k=c.material.uuid+'|'+(keepName?'':(c.name||''))+'|'+sig+'|'+c.renderOrder+'|'+c.visible;(groups[k]=groups[k]||[]).push(c);}
+    for(k in groups){var list=groups[k];if(list.length<2)continue;
+      var names=Object.keys(list[0].geometry.attributes),buf={},sz={},n;names.forEach(function(a){buf[a]=[];sz[a]=list[0].geometry.attributes[a].itemSize;});
+      list.forEach(function(m){m.updateMatrix();var g2=(m.geometry.index?m.geometry.toNonIndexed():m.geometry.clone());g2.applyMatrix4(m.matrix);
+        names.forEach(function(a){var at=g2.attributes[a],arr=at.array;for(var j=0;j<at.count*at.itemSize;j++)buf[a].push(arr[j]);});});
+      var mg=new THREE.BufferGeometry();names.forEach(function(a){mg.setAttribute(a,new THREE.Float32BufferAttribute(buf[a],sz[a]));});mg.computeBoundingSphere();mg.computeBoundingBox();
+      var mm=new THREE.Mesh(mg,list[0].material);mm.name=list[0].name;mm.castShadow=list[0].castShadow;mm.receiveShadow=list[0].receiveShadow;mm.renderOrder=list[0].renderOrder;
+      for(var u in list[0].userData)mm.userData[u]=list[0].userData[u];
+      nd.add(mm);list.forEach(function(m){nd.remove(m);});total+=list.length-1;}
+  });
+  return total;}
+/* 效能：遠離鏡頭的室內重模型（神獸、七十二賢、童子）暫時隱藏 */
+function distCullTick(dt){var now=performance.now();if(now<distCullT)return;distCullT=now+350;var cp=camera.position;
+  var cz=zoneAt(cp);
+  for(var i=0;i<distCull.length;i++){var e=distCull[i];if(e.z===undefined)e.z=zoneAt(e.p);var d=cp.distanceTo(e.p);
+    var v=e.z>=0?((cz===e.z&&cp.y<e.p.y+45)||d<40||(e.cut&&cutOn&&d<340)):d<e.r;if(e.o.visible!==v)e.o.visible=v;}}
+
 function beastSetup(key,inst,gltf,holder,idx){
   var def=BEAST_DEFS[key],A={},i,mx=new THREE.AnimationMixer(inst);
   /* 同一模型的複本（例如四隻麒麟）各自擁有材質，發光才不會互相干擾 */
@@ -6746,6 +6774,8 @@ function beastSetup(key,inst,gltf,holder,idx){
     A.Idle.reset().fadeIn(0.3).play();b.busy=false;});
   mixers.push(mx);b.key=key;beasts[key+(idx?'#'+idx:'')]=b;holder.userData.beast=b;b.ringS=def.ringS||1;
   if(def.init)def.init(b);
+  var an={};gltf.animations.forEach(function(c){c.tracks.forEach(function(t){an[t.name.split('.')[0]]=1;});});mergeStatic(inst,an,function(n){return !!(def.part&&def.part(n));});
+  if(key!=='confucius'){holder.updateMatrixWorld(true);distCull.push({o:holder,p:holder.getWorldPosition(new THREE.Vector3()),r:key==='teacher'?180:260,cut:true});}
 }
 function beastPlay(b,name,loop,reps,force){
   var a=b.A[name];if(!a||(b.busy&&!force))return false;b.busy=true;
@@ -7086,7 +7116,7 @@ function zhiPair(key,gltf){
   allSolids=[];if(walk)buildSolids();
 }
 
-var SLOT_KEYS=['confucius','dragon','tiger','xuanwu','zhuque','qilin','sage'];
+var SLOT_KEYS=['confucius','dragon','tiger','xuanwu','zhuque','qilin'];
 function loadSlots(cfgAll){
   var slots=(cfgAll&&cfgAll.slots)||{},i;
   if(cfgAll&&cfgAll.credits)for(i=0;i<cfgAll.credits.length;i++){var c=cfgAll.credits[i];modelCredits.push({t:c.title||c.file||'',a:c.author||'',l:c.license||'',u:c.url||''});}
@@ -7117,7 +7147,7 @@ function startModels(){
 var BIRD_YAW=0;
 function birdsTick(dt){
   var i,f,p,n;for(i=0;i<mixers.length;i++)mixers[i].update(dt);
-  beastsTick(dt);xingtan.tick(dt);zhonggu.tick(dt);classicsTick(dt);if(tongzi)tongzi.tick(dt);embScreen.tick(dt);
+  beastsTick(dt);distCullTick(dt);xingtan.tick(dt);zhonggu.tick(dt);classicsTick(dt);if(tongzi)tongzi.tick(dt);embScreen.tick(dt);
   apricot.tick(dt,performance.now()/1000);
   for(i=0;i<flock.length;i++){f=flock[i];f.a+=f.w*dt;
     var x=f.cx+Math.cos(f.a)*f.r,z=f.cz+Math.sin(f.a)*f.r*0.8,y=f.y+Math.sin(f.a*3+i)*2;
