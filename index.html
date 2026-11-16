@@ -5620,6 +5620,10 @@ function beastSetup(key,inst,gltf,holder){
   var kl=new THREE.PointLight(0xfff0e0,0.9,24,2);kl.position.set(3,8,6);holder.add(kl);
   var gl=new THREE.PointLight(def.glowColor,0,18,2);gl.position.set(0,3.5,0);holder.add(gl);
   var b={def:def,A:A,mx:mx,inst:inst,holder:holder,glowMats:glow,eyes:eyes,light:gl,g:0,taps:0,busy:false,next:null};
+  /* 眼神跟隨：在頭部節點下插一層 pivot（動畫不會碰到它），每幀把它轉向鏡頭 */
+  b.gaze=[];(def.gaze||['Head']).forEach(function(nm){var n=inst.getObjectByName(nm);if(!n)return;var g=new THREE.Group();g.rotation.order='YXZ';
+    while(n.children.length)g.add(n.children[0]);n.add(g);b.gaze.push({g:g,yaw:0,pitch:0});});
+  b.gw=0;b.near=false;b.cool=0;
   mx.addEventListener('finished',function(e){
     e.action.fadeOut(0.3);
     if(b.next){var n=b.next;b.next=null;b.busy=false;n();return;}
@@ -5640,11 +5644,31 @@ function beastTap(b,obj){
 }
 function beastsTick(dt){
   var k,b,i,t=performance.now()/1000;
-  for(k in beasts){b=beasts[k];b.g=Math.max(0,b.g-dt*1.3);
+  for(k in beasts){b=beasts[k];beastGaze(b,dt);beastApproach(b,dt);b.g=Math.max(0,b.g-dt*1.3);
     for(i=0;i<b.glowMats.length;i++)b.glowMats[i].emissiveIntensity=b.glowMats[i].userData.base*(1+b.g*2.2)+Math.sin(t*1.5)*0.04;
     for(i=0;i<b.eyes.length;i++)b.eyes[i].emissiveIntensity=b.eyes[i].userData.base*(1+b.g);
     b.light.intensity=b.g*1.5;}
   bsRingTick(dt);bsSparkTick(dt);
+}
+var _gv=new THREE.Vector3(),_gm=new THREE.Matrix4();
+function beastGaze(b,dt){
+  var dist=b.holder.position.distanceTo(camera.position),on=(!b.busy||!!b.hold)&&dist<40;
+  b.gw+=((on?1:0)-b.gw)*Math.min(1,dt*2.5);
+  for(var i=0;i<b.gaze.length;i++){var z=b.gaze[i],n=z.g.parent;
+    n.updateWorldMatrix(true,false);_gm.copy(n.matrixWorld).invert();_gv.copy(camera.position).applyMatrix4(_gm).normalize();
+    var ty=Math.max(-1.1,Math.min(1.1,Math.atan2(_gv.x,_gv.z))),tp=Math.max(-0.5,Math.min(0.5,Math.asin(Math.max(-1,Math.min(1,_gv.y)))));
+    if(Math.abs(Math.atan2(_gv.x,_gv.z))>2.2){ty=0;tp=0;}   /* 人在背後就不硬轉頭 */
+    var k=Math.min(1,dt*4);z.yaw+=(ty*b.gw-z.yaw)*k;z.pitch+=(tp*b.gw-z.pitch)*k;
+    z.g.rotation.set(-z.pitch,z.yaw,0);}
+}
+/* 漫遊時走近：各神獸打招呼；白虎起身並一直站著，走遠才坐回去 */
+function beastApproach(b,dt){
+  b.cool=Math.max(0,b.cool-dt);
+  var dx=camera.position.x-b.holder.position.x,dz=camera.position.z-b.holder.position.z,d=Math.sqrt(dx*dx+dz*dz),R=b.def.nearR||9;
+  var near=walk&&d<(b.near?R*1.5:R);
+  if(near&&!b.near&&b.cool<=0&&!b.busy&&b.def.approach){b.def.approach(b);b.cool=12;}
+  b.near=near;
+  if(b.hold){var a=b.A[b.hold];if(a){if(b.near&&a.time>a.getClip().duration*0.45)a.timeScale=0;else if(!b.near){a.timeScale=1;b.hold=null;}}}
 }
 /* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商） --- */
 var bsAC=null;
@@ -5687,7 +5711,8 @@ function bsBurst(b,n,y0,spread,up,gold){var p=b.holder.position,sc=b.inst.scale.
 
 var BEAST_DEFS={
   /* 智廳 玄武：點龜殼鳴鐘發光、點龜頭縮頸、點靈蛇昂首、點腳踏步 */
-  xuanwu:{glow:/^carapace$/,glowColor:0x58e0d0,dflt:'shell',
+  xuanwu:{gaze:['Head','SnakeHead'],nearR:8,approach:function(b){if(beastPlay(b,'SnakeRear'))bsNoise(0.8,0.4,'bandpass',5200,0.8,0,'decay');},
+    glow:/^carapace$/,glowColor:0x58e0d0,dflt:'shell',
     part:function(n){if(/^Snake/.test(n))return 'snake';if(n==='Neck')return 'head';if(/^Leg_/.test(n))return 'leg';return null;},
     tap:{
       shell:function(b){b.g=Math.max(b.g,2.2);bsGong(YU);bsRing(b,0x6fe3d6,0);bsRing(b,0xe6c97a,250);},
@@ -5697,7 +5722,8 @@ var BEAST_DEFS={
     awaken:function(b){if(!beastPlay(b,'Awaken'))return;b.g=4;[440,523,659,880,1047].forEach(function(f,i){bsTone(f,2.4,0.07,'sine',i*0.12);});bsGong(YU);
       for(var k=0;k<6;k++)bsRing(b,k%2?0xe6c97a:0x6fe3d6,k*220);}},
   /* 義廳 白虎：點頭虎嘯、點前爪揮爪、點尾巴甩尾、點身體起身、點山岩台座金石鳴；連點五下喚醒白虎、繞殿奔馳 */
-  tiger:{glow:/^(fur|fur_leg|fur_head|armor|stars|star_lines|wisp|tiger_eye)$/,glowColor:0x9fc8ff,dflt:'body',
+  tiger:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Stand')){b.hold='Stand';bsNoise(1.2,0.45,'lowpass',200,1.2);bsTone(73,1.2,0.14,'sawtooth',0,98);}},
+    glow:/^(fur|fur_leg|fur_head|armor|stars|star_lines|wisp|tiger_eye)$/,glowColor:0x9fc8ff,dflt:'body',
     part:function(n){if(/^(Head$|Neck$|Jaw$)/.test(n))return 'head';if(/^Leg_F/.test(n))return 'paw';if(/^Tail_/.test(n))return 'tail';if(n==='Altar')return 'altar';if(/^(Hips$|Spine$|Chest$|Leg_B)/.test(n))return 'body';return null;},
     tap:{
       head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.2);bsNoise(1.5,0.6,'lowpass',260,1.4);bsTone(73,1.5,0.22,'sawtooth',0,147);bsTone(147,1.2,0.08,'triangle',0.05,220);bsRing(b,0xbfd8ff,0);bsRing(b,0xf2d48a,200);}},
@@ -5709,7 +5735,8 @@ var BEAST_DEFS={
       for(var k=0;k<6;k++)bsRing(b,k%2?0xf2d48a:0xbfd8ff,k*220);
       b.next=function(){beastPlay(b,'Run',THREE.LoopOnce,1,true);};}},
   /* 信廳 青龍：點龍頭長吟、點龍身游動、點龍爪龍珠旋光、點祥雲台雲湧；連點五下喚醒神龍、騰雲繞殿 */
-  dragon:{glow:/^(scales|belly|wisp|pearl|cloud|dragon_eye)$/,glowColor:0x5ff0d8,dflt:'body',
+  dragon:{gaze:['Head'],nearR:10,approach:function(b){if(beastPlay(b,'Roar')){bsNoise(1.2,0.3,'lowpass',260,1.2);bsTone(82,1.4,0.12,'sawtooth',0,165);}},
+    glow:/^(scales|belly|wisp|pearl|cloud|dragon_eye)$/,glowColor:0x5ff0d8,dflt:'body',
     part:function(n){if(/^(Head$|Jaw$|Mane$|Whiskers$)/.test(n))return 'head';if(/^(Pearl$|Leg_FR)/.test(n))return 'pearl';if(/^(Altar$|Cloud_)/.test(n))return 'cloud';if(/^(Body_|Leg_|TailFin$)/.test(n))return 'body';return null;},
     tap:{
       head:function(b){if(beastPlay(b,'Roar')){b.g=Math.max(b.g,1.4);bsNoise(1.6,0.55,'lowpass',320,1.2);bsTone(82,1.6,0.2,'sawtooth',0,165);bsTone(165,1.4,0.08,'triangle',0.1,330);}},
@@ -5720,7 +5747,8 @@ var BEAST_DEFS={
       for(var k=0;k<6;k++)bsRing(b,k%2?0xbff8ff:0x3fd8b8,k*220);bsBurst(b,80,1.6,1.4,1.0,0.3);
       b.next=function(){beastPlay(b,'Fly',THREE.LoopOnce,1,true);bsNoise(1.4,0.35,'bandpass',600,0.6);};}},
   /* 禮廳 朱雀：點頭長鳴、點翅振翅、點尾羽開屏、點火焰台火焰竄高；連點五下浴火重生、繞殿飛翔 */
-  zhuque:{glow:/^(feather|feather_orn|tail_eye|plumage|wisp|breast|zhuque_eye)$/,glowColor:0xff7a20,dflt:'wing',
+  zhuque:{gaze:['Head'],nearR:9,approach:function(b){if(beastPlay(b,'Cry')){bsTone(784,1.1,0.1,'triangle',0,1175);bsTone(988,1.0,0.06,'sine',0.4,1568);}},
+    glow:/^(feather|feather_orn|tail_eye|plumage|wisp|breast|zhuque_eye)$/,glowColor:0xff7a20,dflt:'wing',
     part:function(n){if(/^Tail_/.test(n))return 'tail';if(/^(Neck_|Head$|Crest$|Beak)/.test(n))return 'head';if(/^Wing_/.test(n))return 'wing';if(/^(Altar$|Flame_)/.test(n))return 'altar';return null;},
     tap:{
       head:function(b){if(beastPlay(b,'Cry')){b.g=Math.max(b.g,1.2);bsTone(784,1.1,0.12,'triangle',0,1175);bsTone(1175,0.9,0.08,'sine',0.35,988);bsTone(988,1.2,0.07,'sine',0.75,1568);bsTone(392,1.6,0.05,'sine');}},
