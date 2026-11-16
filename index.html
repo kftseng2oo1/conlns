@@ -30,6 +30,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #card .nav{display:flex;gap:8px;margin-top:8px}
 #card .nav .btn{flex:1;padding:9px}
 #card.min .tx,#card.min .nav{display:none}
+#card .grip{width:44px;height:5px;border-radius:3px;background:#c9a24a88;margin:-4px auto 6px}
+#card .hd{touch-action:none}
 #menu{position:fixed;inset:0;background:#000b;display:none;z-index:5}
 #menu .pn{position:absolute;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 56px);bottom:calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto;background:#21170f;border:1px solid #c9a24a77;border-radius:14px;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:8px}
 #menu .grp{font-size:12px;color:#c9a24a;margin:10px 6px 4px;letter-spacing:2px}
@@ -82,6 +84,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 <div id="info"><div class="hd"><h3 id="iTitle"></h3><button class="btn" id="bInfoX">✕</button></div><div class="tx" id="iText"></div><button class="btn" id="bGoStop">前往此站導覽</button></div>
 <div id="joy"><div id="knob"></div></div>
 <div id="card">
+  <div class="grip" id="cGrip"></div>
   <div class="hd"><span class="no" id="cNo"></span><h2 id="cTitle"></h2><button class="btn" id="bMin">－</button></div>
   <div class="tx" id="cText"></div>
   <div class="nav"><button class="btn" id="bPrev">◀ 上一站</button><button class="btn" id="bNext">下一站 ▶</button></div>
@@ -5041,9 +5044,9 @@ room({cx:X,cz:-181.5,w:53,d:53,y0:45,h:27,wall:0xc49a40,floor:0xb8963e,ceil:0x8a
     tag(plane(22,22,tt,X+s*26.1,45+12,-181.5+k*(4+11),-s*Math.PI/2,0.05),'shelf');
   }
   /* 20 支天立柱 */
-  var ct=ctex(128,1024,function(g,w,h){g.fillStyle='#8a2218';g.fillRect(0,0,w,h);
-    g.fillStyle='#2f5a3a';g.fillRect(0,0,w,h*0.5);g.strokeStyle='#8fbf7a';g.lineWidth=4;var i;for(i=0;i<9;i++){g.beginPath();g.moveTo(20+i*12,h*0.5);g.lineTo(30+i*10,30+i*20);g.stroke();}
-    g.fillStyle='#e8c46a';g.fillRect(0,h*0.5-6,w,12);g.font='bold 52px '+FONT;g.textAlign='center';g.textBaseline='middle';vtext(g,'學而時習之不亦說乎',w/2+26,h*0.52+20,52,9,0);});
+  var ct=ctex(256,1024,function(g,w,h){g.fillStyle='#8a2218';g.fillRect(0,0,w,h);
+    g.fillStyle='#2f5a3a';g.fillRect(0,0,w,h*0.5);g.strokeStyle='#8fbf7a';g.lineWidth=4;var i;for(i=0;i<18;i++){g.beginPath();g.moveTo(20+i*12,h*0.5);g.lineTo(30+i*10,30+(i%9)*20);g.stroke();}
+    g.fillStyle='#e8c46a';g.fillRect(0,h*0.5-6,w,12);g.font='bold 44px '+FONT;g.textAlign='center';g.textBaseline='middle';vtext(g,'學而時習之不亦說乎',64+22,h*0.52+14,44,9,0);vtext(g,'學而時習之不亦說乎',192+22,h*0.52+14,44,9,0);});
   var cm=new THREE.MeshLambertMaterial({map:ct});
   for(s=-1;s<=1;s+=2)for(k=0;k<10;k++){var c=new THREE.Mesh(new THREE.CylinderGeometry(0.75,0.85,19.5,14),cm);c.position.set(X+s*13,45+9.75,-159.5-k*4.85);c.rotation.y=s>0?Math.PI:0;tag(c,'column');scene.add(c);
     box(2.4,0.6,2.4,M(0xd9a83a),X+s*13,64.8,-159.5-k*4.85);}
@@ -5540,7 +5543,22 @@ $('bAuto').addEventListener('click',function(){
   if(autoOn){stopAuto();if(window.speechSynthesis){speakId++;speechSynthesis.cancel();}return;}
   autoOn=true;$('bAuto').className='btn on';$('bAuto').textContent='❚❚ 暫停';go(cur);
 });
-$('bMin').addEventListener('click',function(){var c=$('card');var m=c.className.indexOf('min')<0;c.className=m?'min':'';$('bMin').textContent=m?'＋':'－';});
+function setCardMin(m){var c=$('card');c.className=m?'min':'';$('bMin').textContent=m?'＋':'－';}
+$('bMin').addEventListener('click',function(e){e.stopPropagation();setCardMin($('card').className.indexOf('min')<0);});
+/* 導覽卡片：手指在標題列（或縮起時整張卡）往上滑展開、往下滑收起，輕點標題列也能切換 */
+(function(){var c=$('card'),sy=null,sx=0,moved=false,from=null;
+  function ok(t){return t===c||t===$('cGrip')||$('cGrip').contains(t)||c.querySelector('.hd').contains(t)||c.className.indexOf('min')>=0;}
+  c.addEventListener('touchstart',function(e){if(e.touches.length!==1||!ok(e.target)||e.target.closest('button'))return;sy=e.touches[0].clientY;sx=e.touches[0].clientX;moved=false;from=e.target;},{passive:true});
+  c.addEventListener('touchmove',function(e){if(sy===null)return;var dy=e.touches[0].clientY-sy;if(Math.abs(dy)>8)moved=true;
+    if(moved){e.preventDefault();c.style.transform='translateY('+Math.max(-30,Math.min(60,dy))*0.5+'px)';}},{passive:false});
+  c.addEventListener('touchend',function(e){if(sy===null)return;var t=e.changedTouches[0],dy=t.clientY-sy,dx=t.clientX-sx;c.style.transform='';
+    if(moved&&Math.abs(dy)>28&&Math.abs(dy)>Math.abs(dx))setCardMin(dy>0);
+    else if(!moved)setCardMin(c.className.indexOf('min')<0);
+    sy=null;});
+  c.addEventListener('touchcancel',function(){sy=null;c.style.transform='';});
+  /* 滑鼠：點標題列切換 */
+  c.querySelector('.hd').addEventListener('click',function(e){if(e.target.closest('button')||('ontouchstart' in window))return;setCardMin(c.className.indexOf('min')<0);});
+})();
 $('bMenu').addEventListener('click',openMenu);
 $('menu').addEventListener('click',function(e){if(e.target.id==='menu')$('menu').style.display='none';});
 /* 目錄：各篇章可點標題收放；開啟時自動展開目前所在的篇章 */
