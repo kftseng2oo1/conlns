@@ -5297,6 +5297,7 @@ room({cx:XW,cz:-181.5,w:30,d:30,y0:45,h:16,wall:0xf1eee6,floor:0xdcd8cc,ceil:0xe
   TAG=null;tag(emblem('義','金・白虎','#e8e4da','#6a6a6a',XW-14.6,59.5,-181.5+9,Math.PI/2,2.2),'stop:16');
 })();
 
+var ZHI_FIG={kongzi:[],laozi:[]};   /* 程式塑像：模型載入後隱藏 */
 /* 8. 智廳 北・水・玄武 */
 var ZN=-208-15;
 room({cx:X,cz:ZN,w:30,d:30,y0:45,h:7,wall:0x1f2a44,floor:0x1a2236,ceil:null,s:'open'});
@@ -5323,9 +5324,9 @@ room({cx:X,cz:ZN,w:30,d:30,y0:45,h:7,wall:0x1f2a44,floor:0x1a2236,ceil:null,s:'o
   var fl=new THREE.Mesh(new THREE.CircleGeometry(13,64),new THREE.MeshLambertMaterial({map:ft}));fl.rotation.x=-Math.PI/2;fl.position.set(X,45.1,ZN);tag(fl,'zhiFloor');scene.add(fl);
   /* 孔子問禮於老子 */
   TAG='zhiStatue';box(9,1,4,M(0x8a8a8a),X,45.5,ZN-4);
-  var kz=figure(3.2,0x6a5a3a,{beard:true});kz.position.set(X-2.2,46,ZN-4);kz.rotation.y=Math.PI/2;kz.rotation.x=0.12;tag(kz,'zhiStatue');scene.add(kz);
-  var lz=figure(3.3,0x8a8a7a,{beard:true,hat:0xdedad0});lz.position.set(X+2.2,46,ZN-4);lz.rotation.y=-Math.PI/2;tag(lz,'zhiStatue');scene.add(lz);
-  cyl(0.08,0.08,3.8,5,M(0x5a3a20),X+1.2,47.9,ZN-3.4);
+  var kz=figure(3.2,0x6a5a3a,{beard:true});kz.position.set(X-2.2,46,ZN-4);kz.rotation.y=Math.PI/2;kz.rotation.x=0.12;tag(kz,'zhiStatue');scene.add(kz);ZHI_FIG.kongzi.push(kz);
+  var lz=figure(3.3,0x8a8a7a,{beard:true,hat:0xdedad0});lz.position.set(X+2.2,46,ZN-4);lz.rotation.y=-Math.PI/2;tag(lz,'zhiStatue');scene.add(lz);ZHI_FIG.laozi.push(lz);
+  ZHI_FIG.laozi.push(cyl(0.08,0.08,3.8,5,M(0x5a3a20),X+1.2,47.9,ZN-3.4));
   TAG=null;tag(emblem('智','水・玄武','#1f2a44','#bcd8ff',X,49,ZN-14.6,0,2.2),'stop:17');
 })();
 
@@ -5533,7 +5534,7 @@ var INFO={
  yi2:{t:'桃園三結義',x:'劉備、關羽、張飛於桃園結為兄弟。景德鎮粉彩堆白瓷板畫。',s:16},
  zhiDome:{t:'96 斗拱天穹',x:'智廳頂部以 <b>96 斗拱</b>承托浩瀚天幕，象徵智慧無窮。',s:17},
  zhiFloor:{t:'玄武圖騰地面',x:'由 <b>960 塊弧形大理石</b>拼成玄武龜圖騰，與天穹上下呼應。',s:17},
- zhiStatue:{t:'孔子問禮於老子',x:'大型雕塑，象徵求教與智慧啟迪。',s:17},
+ zhiStatue:{t:'孔子問禮於老子',x:'大型雕塑，象徵求教與智慧啟迪。《史記》載孔子適周，問禮於老子。點<b>孔子</b>，他會作揖發問、老子作答，共五問；五問聽完，孔子會說出「其猶龍邪」。點<b>老子</b>會說一句《道德經》。',s:17},
  dragon:{t:'青龍',x:'東方之神，五行屬<b>木</b>，對應春季，守護信廳，象徵「信」。',s:15},
  tiger:{t:'白虎',x:'西方之神，五行屬<b>金</b>，對應秋季，守護義廳，象徵「義」。',s:16},
  xuanwu:{t:'玄武',x:'北方之神，龜蛇合體，五行屬<b>水</b>，對應冬季，守護智廳，象徵「智」。',s:17},
@@ -6089,7 +6090,7 @@ function zhPhrase(tonic,vol){var t=zhIdx(tonic),n=2+Math.floor(Math.random()*2),
 /* 刮奏：由低到高掃過五聲音階，收在主音與其五度 */
 function zhGliss(tonic,vol){var i,v=vol||0.35;for(i=0;i<ZH_SCALE.length;i++)zhNote(ZH_SCALE[i],i*0.045,v*0.6);
   var t=zhIdx(tonic);zhNote(ZH_SCALE[t],0.75,v,true);zhNote(ZH_SCALE[Math.min(ZH_SCALE.length-1,t+3)],0.8,v*0.7,false);zhNote(ZH_SCALE[Math.max(0,t-5)]||ZH_SCALE[0],0.85,v*0.6,false);}
-var ZH_TONIC={xuanwu:ZH.A4,zhuque:ZH.G4,dragon:ZH.E4,tiger:ZH.D4,qilin:ZH.C4,confucius:ZH.C5,teacher:ZH.G4};
+var ZH_TONIC={xuanwu:ZH.A4,zhuque:ZH.G4,dragon:ZH.E4,tiger:ZH.D4,qilin:ZH.C4,confucius:ZH.C5,teacher:ZH.G4,kongzi:ZH.C5,laozi:ZH.A4};
 /* --- 聲音（五音配五行：玄武水＝羽，朱雀火＝徵，青龍木＝角，白虎金＝商，麒麟土＝宮） --- */
 var bsAC=null;
 function bsAudio(){if(!bsAC){try{bsAC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(bsAC&&bsAC.state==='suspended')bsAC.resume();return bsAC;}
@@ -6296,15 +6297,54 @@ function xingtanTeacher(gltf){
   beastSetup('teacher',inst,gltf,holder,0);var b=beasts.teacher;if(b){b.light.distance=6;xingtan.setTeacher(b);}
 }
 
+/* 智廳・孔子問道於老子：孔子（縮小的孔子模型）作揖發問，老子作答；五問聽完，孔子嘆「其猶龍邪」 */
+var ZHI_QA=[
+  ['孔子適周，將問禮於老子。','老子曰：「良賈深藏若虛，君子盛德容貌若愚。去子之驕氣與多欲，態色與淫志，是皆無益於子之身。」','《史記・老子韓非列傳》'],
+  ['孔子問：何謂上善？','老子曰：「上善若水。水善利萬物而不爭，處眾人之所惡，故幾於道。」','《道德經》第八章'],
+  ['孔子問：何以為智？','老子曰：「知人者智，自知者明。勝人者有力，自勝者強。」','《道德經》第三十三章'],
+  ['孔子問：道從何來？','老子曰：「人法地，地法天，天法道，道法自然。」','《道德經》第二十五章'],
+  ['孔子問：柔弱何以勝剛強？','老子曰：「天下莫柔弱於水，而攻堅強者莫之能勝。」','《道德經》第七十八章']];
+var ZHI_LAOZI=[['上善若水。','第八章'],['知足不辱，知止不殆。','第四十四章'],['千里之行，始於足下。','第六十四章'],['大巧若拙，大辯若訥。','第四十五章'],['道可道，非常道。','第一章'],['為學日益，為道日損。','第四十八章']];
+var zhiQ=0,zhiHeard={},zhiDone=false,zhiLz=0;
+function zhiSay(html,ms){$('hint').innerHTML=html;$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,ms||7000);}
+function zhiAsk(){var K=beasts.kongzi,L=beasts.laozi;if(!K||!L||K.busy||L.busy)return;
+  var i=zhiQ%ZHI_QA.length,qa=ZHI_QA[i];zhiQ++;
+  if(!beastPlay(K,'Bow'))return;zhiSay(qa[0],3000);
+  setTimeout(function(){beastPlay(L,'Speak',THREE.LoopOnce,1,true);
+    zhiSay(qa[0]+'<br>'+qa[1]+'<br><small style="opacity:.75">'+qa[2]+(i?'（問句為導覽所擬）':'')+'</small>',9000);
+    speakNow((qa[0]+qa[1]).replace(/[「」]/g,''));
+    zhiHeard[i]=1;var n=0;for(var k in zhiHeard)n++;
+    if(n>=ZHI_QA.length&&!zhiDone){zhiDone=true;setTimeout(zhiFinale,9500);}},2300);}
+function zhiFinale(){var K=beasts.kongzi;if(!K)return;beastPlay(K,'Teach',THREE.LoopOnce,1,true);zhGliss(ZH.A4,0.35);
+  zhiSay('孔子去，謂弟子曰：「鳥，吾知其能飛；魚，吾知其能游；獸，吾知其能走……至於龍，吾不能知其乘風雲而上天。吾今日見老子，其猶龍邪！」<br><small style="opacity:.75">《史記・老子韓非列傳》</small>',11000);
+  speakNow('吾今日見老子，其猶龍邪。');
+  var L=beasts.laozi;for(var k=0;k<8;k++){bsRing(K,k%2?0x7fd8ff:0xbfe8ff,k*260);if(L)bsRing(L,k%2?0xbfe8ff:0x7fd8ff,k*260+130);}
+  [K,L].forEach(function(b){if(!b)return;var p=b.holder.position;for(var i=0;i<70;i++){var an=Math.random()*6.283,r=Math.random()*0.8;
+    bsSpark(p.x+Math.cos(an)*r,p.y+0.3+Math.random()*2.2,p.z+Math.sin(an)*r,(Math.random()-0.5)*0.4,0.3+Math.random()*0.6,(Math.random()-0.5)*0.4,0.55,0.85,1,1.6+Math.random());}});}
+BEAST_DEFS.kongzi={gaze:['Head'],gazeR:12,nearR:7,awakenTaps:0,noWx:true,ringS:1.2,glow:/^(trim|gold)$/,glowColor:0x9fd8ff,dflt:'body',part:sageParts,
+  approach:function(){zhiAsk();},tap:{head:zhiAsk,hands:zhiAsk,body:zhiAsk},awaken:function(){}};
+BEAST_DEFS.laozi={gaze:['Head'],gazeR:12,nearR:7,awakenTaps:0,noWx:true,ringS:1.2,glow:/^(trim|gold)$/,glowColor:0x9fd8ff,dflt:'body',part:function(n){if(/^Staff|^Gourd/.test(n))return 'hands';return sageParts(n);},
+  tap:{head:function(b){if(beastPlay(b,'Nod'))zhiLaozi(500);},hands:function(b){if(beastPlay(b,'Speak'))zhiLaozi(800);},body:function(b){if(beastPlay(b,'Bow'))zhiLaozi(700);}},awaken:function(){}};
+function zhiLaozi(d){setTimeout(function(){var q=ZHI_LAOZI[zhiLz++%ZHI_LAOZI.length];zhiSay(q[0]+'<br><small style="opacity:.75">《道德經》'+q[1]+'</small>',5000);try{speak(q[0]);}catch(e){}},d||600);}
+function zhiPair(key,gltf){
+  var inst=cloneScene(gltf.scene),holder=new THREE.Group(),bb=new THREE.Box3().setFromObject(inst),H=key==='laozi'?2.62:2.55;
+  var s=H/Math.max(0.01,bb.max.y-bb.min.y);inst.scale.setScalar(s);inst.position.y=-bb.min.y*s;holder.add(inst);
+  var sd=key==='kongzi'?-1:1;holder.position.set(X+sd*2.2,46,ZN-4);holder.rotation.y=-sd*Math.PI/2;holder.userData.info='zhiStatue';scene.add(holder);
+  beastSetup(key,inst,gltf,holder,0);var b=beasts[key];if(b)b.light.distance=7;
+  var f=ZHI_FIG[key];for(var i=0;i<f.length;i++){f[i].visible=false;f[i].traverse(function(o){o.userData.noCollide=true;});}
+  allSolids=[];if(walk)buildSolids();
+}
+
 var SLOT_KEYS=['confucius','dragon','tiger','xuanwu','zhuque','qilin','sage'];
 function loadSlots(cfgAll){
   var slots=(cfgAll&&cfgAll.slots)||{},i;
   if(cfgAll&&cfgAll.credits)for(i=0;i<cfgAll.credits.length;i++){var c=cfgAll.credits[i];modelCredits.push({t:c.title||c.file||'',a:c.author||'',l:c.license||'',u:c.url||''});}
-  SLOT_KEYS.forEach(function(k){var cfg=slots[k]||{};loadGLB('models/'+(cfg.file||k+'.glb'),function(g){if(k==='confucius'&&!cfg.file)xingtanTeacher(g);applySlot(k,g,cfg);});});
+  SLOT_KEYS.forEach(function(k){var cfg=slots[k]||{};loadGLB('models/'+(cfg.file||k+'.glb'),function(g){if(k==='confucius'&&!cfg.file){xingtanTeacher(g);zhiPair('kongzi',g);}applySlot(k,g,cfg);});});
 }
 function startModels(){
   if(!gltfLoader||location.protocol==='file:')return;
   fetch('models/models.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null;})['catch'](function(){return null;}).then(function(j){loadSlots(j);});
+  loadGLB('models/laozi.glb',function(g){zhiPair('laozi',g);});
   /* 青鳥：鎏金、緩慢拍翅，取代廊頂的程式鳥 */
   loadGLB('models/bird-parrot.glb',function(g){
     var src=g.scene,b=new THREE.Box3().setFromObject(src),sz=new THREE.Vector3();b.getSize(sz);
