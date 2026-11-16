@@ -51,11 +51,13 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 #menu .it{display:flex;gap:10px;align-items:center;padding:10px 10px;border-radius:10px;font-size:15px}
 #menu .it span{color:#c9a24a;font-size:12px;width:22px;text-align:right}
 #menu .it.cur{background:#b8862f33}
-#hint{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top) + 58px);text-align:center;font-size:12px;color:#e9d9b4;text-shadow:0 1px 3px #000;pointer-events:none;transition:opacity 1s}
-#info{z-index:6;position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 58px);max-width:520px;margin:0 auto;background:#1f1610f2;border:1px solid #e0b860aa;border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px #000a;display:none}
+#hint{position:fixed;left:50%;transform:translateX(-50%);bottom:200px;width:max-content;max-width:min(92vw,560px);box-sizing:border-box;text-align:center;font-size:14px;line-height:1.6;color:#f2e4c2;background:#1a120cc8;border:1px solid #c9a24a55;border-radius:14px;padding:7px 14px;text-shadow:0 1px 2px #000;pointer-events:none;transition:opacity .6s;z-index:5}
+#hint:empty{display:none}
+#iChip{position:fixed;left:50%;transform:translateX(-50%);bottom:150px;z-index:5;display:none;border:1px solid #e0b860aa;background:#2a1e12ee;color:#f6d88e;border-radius:18px;padding:7px 14px;font-size:14px;font-family:inherit;box-shadow:0 3px 12px #0008;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#info{z-index:6;position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 12px);max-width:520px;margin:0 auto;background:#1f1610f2;border:1px solid #e0b860aa;border-radius:14px;padding:10px 12px;box-shadow:0 6px 24px #000a;display:none}
 #info .hd{display:flex;align-items:center;gap:8px}
 #info h3{margin:0;flex:1;font-size:16px;color:#f6d88e}
-#info .tx{margin:6px 0 8px;font-size:14px;line-height:1.65;max-height:30vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+#info .tx{margin:6px 0 8px;font-size:14px;line-height:1.65;max-height:24vh;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 #info .tx b{color:#f0c96a}
 #bGoStop{width:100%}
 #zone{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 16px);background:#1f1610cc;border:1px solid #c9a24a66;border-radius:20px;padding:6px 14px;font-size:14px;color:#f0d48e;display:none;pointer-events:none;white-space:nowrap}
@@ -88,6 +90,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#1b1410;color:#f3e6c8;
 <div id="hint">單指旋轉・雙指縮放／平移・點物件看解說</div>
 <div id="zone"></div>
 <div id="mapw"><div class="mh"><button class="btn sm" id="bMapFollow" title="跟隨">◎</button><button class="btn sm" id="bMapReset" style="visibility:hidden">1×</button><button class="btn sm" id="bNight" title="日夜">☾</button><button class="btn sm" id="bMapMin">－</button></div><canvas id="map"></canvas></div>
+<button id="iChip"></button>
 <div id="info"><div class="hd"><h3 id="iTitle"></h3><button class="btn" id="bInfoX">✕</button></div><div class="tx" id="iText"></div><button class="btn" id="bGoStop">前往此站導覽</button></div>
 <div id="joy"><i class="u">▲</i><i class="d">▼</i><i class="l">◀</i><i class="r">▶</i><div id="knob"></div><b>搖桿移動</b></div>
 <div id="card">
@@ -6293,7 +6296,7 @@ function pick(cx,cy){
   ray.setFromCamera(ndc,camera);ray.camera=camera;ray.far=walk?80:3000;
   var hits=ray.intersectObjects(scene.children,true),h=null,i;
   for(i=0;i<hits.length;i++){if(hits[i].object!==marker&&!hits[i].object.isPoints&&hits[i].object!==moon&&visibleChain(hits[i].object)){h=hits[i];break;}}
-  if(!h){hideInfo();return;}
+  if(!h){hideInfo();$('iChip').style.display='none';return;}
   if(walk&&h.face&&h.distance<75&&!findBeast(h.object)&&!findDisciple(h.object)&&!findZg(h.object)&&!h.object.userData.disIdx&&!h.object.userData.disPlaque&&!h.object.userData.apricot&&!h.object.isInstancedMesh){
     var wn=h.face.normal.clone().transformDirection(h.object.matrixWorld);if(wn.y>0.6){hideInfo();walkGo(h.point);return;}}
   var key=findInfo(h.object);
@@ -6306,8 +6309,20 @@ function pick(cx,cy){
   var scp=findScreenPanel(h.object);if(scp){embScreen.hit(scp);var it=camera.position.z<39.6?scp.back:scp.front;setTimeout(function(){$('hint').innerHTML='<b>'+it.n+'</b>（'+(camera.position.z<39.6?'背面・花鳥':'正面・尼山六景')+'）<br>'+it.d;$('hint').style.opacity=1;clearTimeout(sageSay.t);sageSay.t=setTimeout(hideHint,6000);},50);try{zhPhrase(ZH.G5,0.3);}catch(e){}}
   if(h.object.userData.disIdx||h.object.userData.disPlaque)disTap(h);
   if(h.object.userData.apricot&&h.instanceId!==undefined)apricot.tap(h.object,h.instanceId);
+  /* 有互動的物件：不跳出大說明卡（免得擋住塑像），改在下方顯示「說明」小按鈕，想看再點 */
+  if(bb||dsc||zgi||clr||scp||(tongzi&&h.object.userData.tzIdx)||h.object.userData.disIdx||h.object.userData.disPlaque||h.object.userData.apricot){showInfoChip(key);return;}
   showInfo(key,h.point,h.distance);
 }
+var chipKey=null,chipT=null;
+function showInfoChip(key){var it=key.indexOf('stop:')===0?STOPS[parseInt(key.slice(5),10)]:INFO[key];if(!it)return;hideInfo();chipKey=key;
+  $('iChip').textContent='ⓘ '+it.t+'・說明';$('iChip').style.display='block';clearTimeout(chipT);chipT=setTimeout(function(){$('iChip').style.display='none';},7000);}
+$('iChip').addEventListener('click',function(e){e.stopPropagation();$('iChip').style.display='none';if(chipKey)showInfo(chipKey);});
+/* 字幕與說明小按鈕擺在畫面下方、導覽卡片之上，不擋住中間的塑像 */
+var ovT=0;function placeOverlays(now){if(now-ovT<250)return;ovT=now;var c=$('card'),b=200;
+  if(c.style.display!=='none'){var r=c.getBoundingClientRect();if(r.height>0)b=Math.max(110,window.innerHeight-r.top+12);}
+  else if(walk)b=Math.max(b,window.innerHeight-$('joy').getBoundingClientRect().top+30);
+  if($('info').style.display==='block'){var ri=$('info').getBoundingClientRect();b=Math.max(b,window.innerHeight-ri.top+12);}
+  $('hint').style.bottom=(b+44)+'px';$('iChip').style.bottom=b+'px';}
 function showInfo(key,pt,dist){
   var it,stop=-1;
   if(key.indexOf('stop:')===0){stop=parseInt(key.slice(5),10);it={t:STOPS[stop].t,x:STOPS[stop].x};}
@@ -7170,7 +7185,7 @@ function loop(now){
   requestAnimationFrame(loop);
   var dt=Math.min(0.05,lastT?(now-lastT)/1000:0.016);lastT=now;
   if(walk)walkStep(dt);
-  petalTick(dt,now);mapTick(now);birdsTick(dt);
+  petalTick(dt,now);mapTick(now);birdsTick(dt);placeOverlays(now);
   if(marker.visible&&now-markerT>2500)marker.visible=false;
   if(tw){var k=Math.min(1,(now-tw.s)/tw.d),e=ease(k);camera.position.lerpVectors(tw.p0,tw.p1,e);target.lerpVectors(tw.t0,tw.t1,e);camera.lookAt(target);if(k>=1){tw=null;syncSph();}}
   if(window._chand)window._chand.rotation.y+=0.0015;
